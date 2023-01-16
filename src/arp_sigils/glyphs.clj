@@ -70,10 +70,10 @@
 
 (defn join-line []
   {:name :join
-   :parts [[:line -10 0 10 0]]
-   :width 20
-   :in [-10 0]
-   :out [10 0]})
+   :parts [[:line -20 0 20 0]]
+   :width 40
+   :in [-20 0]
+   :out [20 0]})
 
 (defn zero []
   {:name :zero
@@ -97,6 +97,7 @@
    :width 20
    :bbox (c2d/rect-shape -10 -10 10 10)
    :in [-10 0]
+   :out [10 0]
    :attach [[0 20 fm/HALF_PI]]
    :sizefn (fn [self bboxes]
              (let [bbox    (-> bboxes first :bbox )
@@ -129,8 +130,9 @@
    :out [10 0]
    :bbox (c2d/rect-shape -10 -10 10 10)
    :in [-10 0]
-   :attach [[-10 -20 0 (+ fm/PI fm/QUARTER_PI)]
-            [10 -20 (+ fm/QUARTER_PI)]]
+   :attach [[-10 -20 (* 1.3 fm/PI )]
+            [10 -20 (* 0.3 fm/-PI)]
+            ]
    :sizefn (fn [boxes])
    })
 

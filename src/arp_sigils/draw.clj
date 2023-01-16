@@ -73,6 +73,8 @@
         (c2d/push-matrix canref)
         (c2d/translate canref x y)
         (c2d/rotate canref theta)
+        ;(c2d/set-color canref :blue)
+        ;(c2d/arc canref 0 0 10 10 0 fm/TWO_PI)
         (draw-glyph canref glyph)
         (c2d/pop-matrix canref)
       ))
@@ -134,12 +136,20 @@
 
 (defn digit->glyphfn [d]
   (case d
-        \0 (g/zero)
-        \1 (g/one)
-        \2 (g/two)))
+    \0 (g/zero)
+    \1 (g/one)
+    \2 (g/two)
+    \3 (g/three)
 
-(def testsigil
-  (arp->sigil "01:11:21:20"))
+    ))
+(comment
+  (def testsigil (arp->sigil "20:21:23"))
+  (def testsigil (arp->sigil "00:21:30"))
+  (def testsigil (arp->sigil "10:20:30:31:33"))
+
+  (arp->sigil "03:03:03")
+ (g/attach-glyphs-by-line (g/one) (g/two))
+  )
 
 (defn arp->sigil [macstr]
   (let [rev    (clojure.string/reverse macstr)
@@ -148,11 +158,16 @@
                      :let [a (first seg)
                            b (second seg)]]
                  (g/attach-glyph (digit->glyphfn b) (digit->glyphfn a)))
-        lined  (map #(g/attach-out-glyph (g/join-line) %) gpairs) ]
-    (reduce #(g/attach-out-glyph %) lined)))
+        ;gpairs (reverse gpairs)
+        ;lined  (map #(g/attach-out-glyph (g/join-line) %) gpairs) 
+        ]
+    ;(reduce #(g/attach-out-glyph (g/attach-out-glyph  (g/join-line)) %2) lined)
+    (reduce #(g/attach-glyphs-by-line %2 %1) gpairs)
+    
+    ))
 
 (defn draw-testbed [canvas]
-  (c2d/with-canvas [canvas canvas]
+  (comment c2d/with-canvas [canvas canvas]
                    ;(draw-sigil canvas (g/two))
                    (c2d/set-color canvas :red)
                    (c2d/set-stroke canvas 1)
@@ -173,7 +188,7 @@
   (let [exc     (:exception @state)
         message (.getMessage exc)
         traces  (.getStackTrace exc)
-        lines   (filter #(re-matches #".*pftop_viz.*" %) (concat (map str traces)))
+        lines   (filter #(re-matches #".*arp_sigils.*" %) (concat (map str traces)))
         tmout   (:exception-timeout @state)
         diff    (max 0 (- tmout (System/currentTimeMillis)))  
         ]
