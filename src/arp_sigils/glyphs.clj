@@ -37,7 +37,11 @@
 (defn rotate-shape-at [shape x y theta]
     (.createTransformedShape (java.awt.geom.AffineTransform/getRotateInstance  theta x y) 
     shape))
-
+;(get-rotated-bounds 10 10 fm/QUARTER_PI)
+;(get-rotated-bounds 10 10 fm/HALF_PI)
+(defn get-rotated-bounds [w h theta]
+  (let [bounds (.getBounds (rotate-shape-at (c2d/crect-shape 0 0 w h) 0 0 theta))]
+    [(.getWidth bounds) (.getHeight bounds)]))
 
 ;(attach-rect2d-at (c2d/rect-shape -10 -10 20 20) 0 -10 -10 0 fm/-HALF_PI)
 (defn attach-rect2d-at [rect inx iny ax ay theta]
@@ -74,7 +78,7 @@
    :zero 1
    :one 1
    :two 2
-   :three 2})
+   :three 3})
 
 
 (defn size-join-line [_]
@@ -96,7 +100,7 @@
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  myw myw)
-     :attach [[0 0 0.0]] }))
+     :attach [[0 hmyw (fm/radians 90)]] }))
 
 (defn size-one [children]
   (let [childbb (-> children first :bbox)
@@ -109,14 +113,16 @@
         hmyw    (* 0.5 myw)
         hmyh    (* 0.5 myh)
         ]
-    {:parts [[:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]]
+    {:parts [[:line (- hmyw) 0 0 0]
+             [:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]
+             [:line 0 0 hmyw 0]
+             ]
      :width combyw
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  combyw combyh)
      :attach [[0 (- hmyh) fm/-HALF_PI]] }))
 
-;(size-two [(size-zero nil) (size-zero nil)])
 (defn size-two [children]
   (let [childbbs (map :bbox children)
         cws      (mapv #(.getWidth %) childbbs)
@@ -130,33 +136,48 @@
         qmyw    (* 0.25 myw)
         qmyh    (* 0.25 myh)
         ]
-    {:parts [[:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]
-             [:point [qmyw qmyh]] [:point [(- qmyw) (- qmyh)]]]
+    {:parts [[:line (- hmyw) 0 0 0]
+             [:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]
+             [:point [qmyw qmyh]] [:point [(- qmyw) (- qmyh)]]
+             [:line 0 0 hmyw 0]
+             ]
      :width combyw
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  combyw combyh)
      :attach [[0 (- hmyh) fm/-HALF_PI] [0 hmyh fm/HALF_PI]] }))    
 
+;(size-three [(size-zero nil) (size-zero nil)])
 (defn size-three [children]
-  (println "two: " children)
+  (println "three " children)
   (let [childbbs (map :bbox children)
         cws      (mapv #(.getWidth %) childbbs)
         chs      (mapv #(.getHeight %) childbbs)
-        myw     20
-        myh     20
-        combyw  (apply max (conj cws myw))
-        combyh  (apply + (conj chs myh))
+        thetas   [(fm/radians 315) (fm/radians 225) (fm/radians 90)]
+        newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
+        newws    (mapv first newbb)
+        newhs    (mapv second newbb)
+        myw     (+ 20 (reduce + (take 2 newws)))
+        myh     (+ 20 (reduce + (take-last 2 newhs)))
+        ;combyw  (apply max (conj cws myw))
+        ;combyh  (apply + (conj chs myh))
         hmyw    (* 0.5 myw)
         hmyh    (* 0.5 myh)
         ]
-    {:parts [[:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]]
-     :width combyw
+    {:parts [[:line (- hmyw) 0 0 0]
+             [:line 0 0 0 hmyh] [:line 0 0 (- hmyw) (- hmyh)] [:line 0 0 hmyw (- hmyh)]
+             [:point (- hmyw) (- hmyh)] [:point hmyw (- hmyh)] [:point 0 hmyh]
+             [:line 0 0 hmyw 0]
+             ]
+     :width myw
      :in [(- hmyw) 0]
      :out [hmyw 0]
-     :bbox (c2d/crect-shape 0 0  combyw combyh)
-    ; :attach [[0 (- hmyh) fm/HALF_PI] [0 hmyh fm/-HALF_PI]] }))    :attach [[0 (- hmyh) fm/HALF_PI] [0 hmyh fm/-HALF_PI]] 
-     }))
+     :bbox (c2d/crect-shape 0 0  myw myh)
+     :attach [
+              [(- hmyw) (- hmyh) (fm/radians 225)]
+              [hmyw (- hmyh) (fm/radians 315)]
+              [0 hmyh (fm/radians 90)]
+              ] }))
 
 
 (def size-function-map
@@ -164,7 +185,7 @@
    :zero      size-zero
    :one       size-one
    :two       size-two
-;   :three     size-three
+   :three     size-three
    })
 ;(defn join-line [sigil node]
 ;  (let [me (get sigil node)

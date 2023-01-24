@@ -25,6 +25,9 @@
 
 (def canvas (c2d/canvas 800 400))
 
+(defn negpoint [[x y]]
+  [(- x) (- y)])
+
 (defn draw-strokes [canref strokes]
                    (doseq [part (:parts strokes)
                          :let [kind   (first part)
@@ -50,8 +53,8 @@
         [inx iny] in
         [outx outy] out ]
     (c2d/push-matrix canref)
-    ;(c2d/translate canref (- (* 0.5 width) 0)
-    (c2d/translate canref  (* 0.5 width) 0)
+    ;(c2d/translate canref (- (* 0.5 width)) 0)
+    ;(c2d/translate canref  (* 0.5 width) 0)
     ;(c2d/set-color canref :red)
     ;(c2d/set-stroke canref 0.5)
     ;(c2d/arc canref 0 0 20 20 0 fm/TWO_PI)
@@ -74,36 +77,40 @@
         {:keys [:next :children :data ]} me
         out (:out data [20, 0])
         width (:width data 20)  
+        n (get sigil next)
+        in (negpoint (get-in n [:data :in] [0 0]))
         ]
-    ;(c2d/push-matrix canref)
-    ;(c2d/translate canref sw sh)
     (c2d/set-color canref :red)
     (c2d/set-stroke canref 0.75)
     ;(c2d/line canref 0 0 20 0)
     ;(c2d/line canref 0 0 0 20)
     ;(c2d/crect canref 0 0 width width true)
     (c2d/set-stroke canref stroke)
-    (c2d/set-color canref 0 (+ 50 (* node 30)) 0)
+    ;(c2d/set-color canref 0 (+ 50 (* node 20)) 0)
+    (c2d/set-color canref :lime)
     ;(c2d/set-stroke canref stroke)
+    ;(c2d/translate canref (* -0.5 width) 0)
     (draw-glyph canref data)
-    (c2d/translate canref out)
     (if-not (empty? children)
       (doseq [[child tmatrix] (map vector children (:attach data))
-              :let [[x y theta] tmatrix]]
+              :let [[x y theta] tmatrix
+                    chin (get-in sigil [child :data :in] )]]
         (c2d/push-matrix canref)
-        ;(c2d/translate canref (* -0.5 width) 0)
         (c2d/translate canref x y)
         (c2d/rotate canref theta)
+        (c2d/translate canref (negpoint chin) )
         ;(c2d/line canref 0 0 0 100)
         ;(c2d/line canref 0 0 100 0)
         (draw-sigil canref sigil child)
         (c2d/pop-matrix canref)
         )
       )
+    (c2d/translate canref out)
+    (c2d/translate canref in)
+    ;(c2d/translate canref (* 0.5 width) 0)
     (when next
         (draw-sigil canref sigil next)
         )
-    (c2d/translate canref (* 0.5 width) 0)
 
     ))
 
@@ -240,13 +247,19 @@
   (start false)
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)
-      (s/append-glyph-at-line-end , 0 :one)
+      (s/append-glyph-at-line-end , 0 :three)
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 :zero)
       (s/append-glyph-at-line-end , 0 :join-line)
       (s/append-glyph-at-line-end , 0 :two)
       (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 :one)
       (s/attach-child , 1 :zero)
-      (s/attach-child , 3 :zero)
+      (s/attach-child , 3 :two)
+      (s/attach-child , 5 :two)
+      (s/attach-child , 7 :three)
     ) 0))
+  
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)
       (s/append-glyph-at-line-end , 0 :two)
@@ -261,42 +274,6 @@
       (s/append-glyph-at-line-end , 0 :two)
     ) 0))
 
-  (def pi (.. (c2d/rect-shape 0 0 10 10) (getPathIterator nil) ))
-  (def a (double-array 6))
-  (.isDone pi)
-  (.next pi)
-  (.currentSegment pi a)
-  (vec a)
-(identity java.awt.geom.PathIterator/SEG_CLOSE)
-
-  (let [pi (.. (c2d/rect-shape 0 0 10 10) (getPathIterator nil) )]
-    (while (not (.isDone pi))
-      (.currentSegment pi (double-array 6)))
-      (.next pi)
-      )
-  (type (c2d/rect-shape 0 0 10 10))
-  (clojure.reflect/reflect (c2d/rect-shape 0 0 10 10))
-  (->  (c2d/rect-shape 0 0 10 10)
-    (c2d/shape->path-def
-    (.createTransformedShape (java.awt.geom.AffineTransform/getRotateInstance  1.0 0.0 0.0) 
-    (c2d/rect-shape 0 0 10 10))
-      )
-  )
-(doto (java.awt.geom.AffineTransform.) (.rotate 1.0) (.translate 10 10))
-    (c2d/shape->path-def (c2d/rect-shape 0 0 10 10))
-   (c2d/bounding-box )
-    (.rotate 90)
-  (->  (doto (c2d/rect-shape 0 0 10 10) (.rotate 90))
-    (.rotate 90)
-   (c2d/bounding-box )
-  (-> (g/rotate-shape-at (c2d/crect-shape -10 -10 10 10) -10 0 Math/PI)
-   c2d/bounding-box )
-  (c2d/path-def->shape (:parts (g/one)))
-    (c2d/path-def->shape [[:line 0.0 0.0 1.0 1.0]])
-  )
-  (g/size-sigil (g/zero))
-
-  (.getBounds (.createUnion (c2d/rect-shape 0 0 10 10) (c2d/rect-shape 10 10 20 20)))
-  (g/size-sigil (g/attach-sigil (g/zero) (g/one)))
+  (c2d/with-canvas [canref canvas])
   
   )
