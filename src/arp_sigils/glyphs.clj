@@ -103,7 +103,7 @@
         w       (if childbb (.getWidth childbb) 0)
         h       (if childbb (.getHeight childbb) 0)
         myw     20
-        myh     20
+        myh     40
         combyw  (max myw w)
         combyh  (+ myh h)
         hmyw    (* 0.5 myw)
@@ -122,18 +122,21 @@
         cws      (mapv #(.getWidth %) childbbs)
         chs      (mapv #(.getHeight %) childbbs)
         myw     20
-        myh     20
+        myh     40
         combyw  (apply max (conj cws myw))
         combyh  (apply + (conj chs myh))
         hmyw    (* 0.5 myw)
         hmyh    (* 0.5 myh)
+        qmyw    (* 0.25 myw)
+        qmyh    (* 0.25 myh)
         ]
-    {:parts [[:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]]
+    {:parts [[:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]
+             [:point [qmyw qmyh]] [:point [(- qmyw) (- qmyh)]]]
      :width combyw
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  combyw combyh)
-     :attach [[0 (- hmyh) fm/HALF_PI] [0 hmyh fm/-HALF_PI]] }))    
+     :attach [[0 (- hmyh) fm/-HALF_PI] [0 hmyh fm/HALF_PI]] }))    
 
 ;(defn size-three [children]
 ;  (println "two: " children)
