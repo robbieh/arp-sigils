@@ -68,18 +68,6 @@
     (c2d/pop-matrix canref)
     ))
 
-(second testsigil)
-(identity testsigil)
-[{:name :join-line, :next 1, :data {:parts [[:line -20 0 20 0]], :width 40, :in [-20 0], :out [20 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0xbdef600 "java.awt.geom.Rectangle2D$Double[x=-20.0,y=-20.0,w=20.0,h=20.0]"]}}
-
-{:name :one, :next 2, :children [5], :data {:parts [[:line 0 -10.0 0 10.0] [:point 0 -10.0]], :width 20.0, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x2a3facd4 "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-20.0,w=20.0,h=40.0]"], :attach [[0 -10.0 1.5707963267948966]]}}
-
-{:name :join-line, :next 3, :data {:parts [[:line -20 0 20 0]], :width 40, :in [-20 0], :out [20 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x4a8d4a21 "java.awt.geom.Rectangle2D$Double[x=-20.0,y=-20.0,w=20.0,h=20.0]"]}}
-{:name :one, :next 4, :children [6], :data {:parts [[:line 0 -10.0 0 10.0] [:point 0 -10.0]], :width 20.0, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x5cd7ac0a "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-20.0,w=20.0,h=40.0]"], :attach [[0 -10.0 1.5707963267948966]]}}
-{:name :join-line, :data {:parts [[:line -20 0 20 0]], :width 40, :in [-20 0], :out [20 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x20453f66 "java.awt.geom.Rectangle2D$Double[x=-20.0,y=-20.0,w=20.0,h=20.0]"]}}
-{:name :zero, :data {:parts [[:arc 0 0 20 20 0.0 6.283185307179586]], :width 20, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x774b7eb6 "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-10.0,w=20.0,h=20.0]"], :attach [[0 0 0.0]]}}
-{:name :zero, :data {:parts [[:arc 0 0 20 20 0.0 6.283185307179586]], :width 20, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x5737fe3c "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-10.0,w=20.0,h=20.0]"], :attach [[0 0 0.0]]}}]
-
 ;(map :parts [(g/zero) (g/one) (g/one) (g/zero) (g/two)])
 (defn draw-sigil [canref sigil node]
   (let [me (get sigil node)
@@ -118,14 +106,8 @@
 
 
 
-(defn digit->glyphfn [d]
-  (case d
-    \0 (g/zero)
-    \1 (g/one)
-    \2 (g/two)
-    \3 (g/three)
+;(defn digit->glyphfn [d] (case d \0 (g/zero) \1 (g/one) \2 (g/two) \3 (g/three)))
 
-    ))
 (comment
   (def testsigil (arp->sigil "20:21:23"))
   (def testsigil (arp->sigil "00:21:30"))
@@ -135,20 +117,18 @@
  (g/attach-glyphs-by-line (g/one) (g/two))
   )
 
-(defn arp->sigil [macstr]
-  (let [rev    (clojure.string/reverse macstr)
-        segs   (clojure.string/split rev #":")
-        gpairs (for [seg segs
-                     :let [a (first seg)
-                           b (second seg)]]
-                 (g/attach-glyph (digit->glyphfn b) (digit->glyphfn a)))
-        ;gpairs (reverse gpairs)
-        ;lined  (map #(g/attach-out-glyph (g/join-line) %) gpairs) 
-        ]
-    ;(reduce #(g/attach-out-glyph (g/attach-out-glyph  (g/join-line)) %2) lined)
-    (reduce #(g/attach-glyphs-by-line %2 %1) gpairs)
-    
-    ))
+;(defn arp->sigil [macstr]
+;  (let [rev    (clojure.string/reverse macstr)
+;        segs   (clojure.string/split rev #":")
+;        gpairs (for [seg segs
+;                     :let [a (first seg)
+;                           b (second seg)]]
+;                 (g/attach-glyph (digit->glyphfn b) (digit->glyphfn a)))
+;        ;gpairs (reverse gpairs)
+;        ;lined  (map #(g/attach-out-glyph (g/join-line) %) gpairs) 
+;        ]
+;    ;(reduce #(g/attach-out-glyph (g/attach-out-glyph  (g/join-line)) %2) lined)
+;    (reduce #(g/attach-glyphs-by-line %2 %1) gpairs)))
 
 (def lineno (atom 20))
 (defn draw-testbed [canvas]
@@ -254,6 +234,7 @@
     ))
 
 (comment
+  (start false)
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)
       (s/append-glyph-at-line-end , 0 :one)

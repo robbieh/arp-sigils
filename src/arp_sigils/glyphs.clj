@@ -163,15 +163,15 @@
    :two       size-two
 ;   :three     size-three
    })
-(defn join-line [sigil node]
-  (let [me (get sigil node)
-        outglyph (:outglyph me)]
-    (if (empty? outglyph)
-      (assoc sigil node (merge me join-line-map))
-      (let [child     (get sigil outglyph)
-            childfunc (:func child)
-            newsigil  (childfunc child)] 
-        (assoc newsigil node (merge me join-line-map)))) ))
+;(defn join-line [sigil node]
+;  (let [me (get sigil node)
+;        outglyph (:outglyph me)]
+;    (if (empty? outglyph)
+;      (assoc sigil node (merge me join-line-map))
+;      (let [child     (get sigil outglyph)
+;            childfunc (:func child)
+;            newsigil  (childfunc child)] 
+;        (assoc newsigil node (merge me join-line-map)))) ))
 
 
 ;(defn zero []
