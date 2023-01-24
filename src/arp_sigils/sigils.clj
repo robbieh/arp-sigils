@@ -1,111 +1,111 @@
 (ns arp-sigils.sigils
-  (:require [clojure2d.core :as c2d]
-            [fastmath.core :as fm])
-  )
-
-(defn scale [x]
-  (* 10 x))
+  (:require [arp-sigils.glyphs :as g]
+            [clojure2d.core :as c2d]
+            [clojure.walk :as walk]
+            [fastmath.core :as fm]))
 
 
+;(defn follow-outglyphs [s]
+;  (loop [s    s
+;         node 0
+;         path []]
+;    (if )
+;    )
+;  )
 
-(defn attach-sigil [base addition]
-  (let [acount (count (:attach base))]
-    (assoc base :subsigils (vec (repeat acount addition)))))
+(reduce #(apply (partial assoc %1) %2) {} [[:1 1] [:2 2]])
 
-(defn size-sigil [sigil]
-  (let [theta     (:rotation sigil)
-        [x y]     (:in sigil)
-        bb        (:bbox sigil) 
-        subsigils (:subsigils sigil)
-        sizefn    (:sizefn sigil)]
-    (if subsigils 
-      (let [sizedsubs (map size-sigil subsigils)
-            sized     (sizefn sigil sizedsubs)]
-        (merge sigil sized {:subsigils sizedsubs}))
-      sigil
+;(defn attach-subglyph [sigil parent childtype]
+;  (let [myname (get-in sigil [parent :name])
+;        childcount (get myname g/child-count-map)]
+;    (assoc-in sigil [parent :subglyphs] child))
+;    )
+;
+;(defn attach-outglyph [sigil parent child]
+;  (assoc-in sigil [parent :outglyph] child))
+
+;{:name _
+; :next _
+; :chlidren _
+; :data _}
+(g/size-join-line [])
+(defn size-sigil [sigil node]
+  (print "sizing at " node)
+  (let [me          (get sigil node)
+        myname      (:name me)
+        nextglyph   (:next me)
+        nextdata    (:data (get-in sigil [nextglyph :data]))
+        childglyphs (:children me)
+        myfunc      (get g/size-function-map myname)
+        _ (println " with name " myname "next: " nextglyph "children: " childglyphs)
+        combined    (vec(remove nil? (flatten [nextglyph childglyphs])))
+        sized       (if-not (empty? combined)
+                      (reduce #(size-sigil %1 %2) sigil combined)
+                      sigil)
+        childdata   (mapv #(get-in sized [%1 :data]) childglyphs)
+        ;sized       (if-not (nil? nextglyph) 
+        ;              (size-sigil sized nextglyph)
+        ;              sized)
+        sizeresult  (myfunc childdata)
+        ]
+      (assoc-in sized [node :data] sizeresult)))
+
+(defn find-line-last [sigil node]
+  (let [nodeinfo (get sigil node)
+        next     (:next nodeinfo)]
+    (if (nil? next )
+      node
+      (find-line-last sigil next)
       )))
 
-(defn rotate-shape-at [shape x y theta]
-    (.createTransformedShape (java.awt.geom.AffineTransform/getRotateInstance  theta x y) 
-    shape))
+(defn next-slot [sigil] (count sigil))
+
+(defn append-glyph [sigil childname]
+  (let [child (g/empty-glyph childname)
+        slot  (next-slot sigil)]
+    (assoc sigil slot child)))
+
+(defn append-glyph-at-line-end [sigil node childname]
+  (let [child (g/empty-glyph childname)
+        end   (find-line-last sigil node)
+        slot  (next-slot sigil)]
+    (-> sigil
+      (assoc , slot child)
+      (assoc-in , [end :next] slot))))
+
+(defn attach-child [sigil parent childname]
+  (let [parentname (get-in sigil [parent :name])
+        child      (g/empty-glyph childname)
+        childcount (get g/child-count-map parentname)
+        ;children   (vec (repeat child childcount))
+        slot       (next-slot sigil)
+        childrange (vec (range slot (+ slot childcount))) ]
+    (-> (reduce #(assoc %1 %2 child) sigil childrange)
+      (assoc-in , [parent :children] childrange))))
 
 
-(attach-rect2d-at (c2d/rect-shape -10 -10 20 20) 0 -10 -10 0 fm/-HALF_PI)
-(defn attach-rect2d-at [rect inx iny ax ay theta]
-  (let [tform (doto (java.awt.geom.AffineTransform.)  
-                    (.translate (- inx) (- iny))
-                    (.rotate theta)
-                    (.translate ax ay)
-                )
-        path  (.createTransformedShape tform rect)
-        ]
-    (.getBounds path)
-    )
-    )
+;{:name _
+; :next _
+; :chlidren _
+; :data _}
 
-(defn bbox->wh [bbox]
-  (let [[x1 y1 x2 y2] bbox] 
-    [(- x2 x1) (- y2 y1)]))
+;(defn sigil [glyphvec attachvec outvec]
+;  (let [attachparts (partition 2 attachvec)
+;        nextparts   (partition 2 outvec)
+;        att-glyph   (reduce #(apply (partial attach-child %1) %2) glyphvec attachparts)
+;        next-glyph  (reduce #(apply (partial append-glyph %1) %2) att-glyph nextparts)
+;        ]
+;;    (vec next-glyph)
+;    ))
 
-(defn rect2d->corners [rect]
-  [(.getX rect) 
-   (.getY rect)
-   (+ (.getX rect) (.getWidth rect))
-   (+ (.getY rect) (.getHeight rect))
-   ])
-
-(defn union-bboxes [& bboxes]
-  (->> bboxes
-    (mapv (partial apply c2d/rect-shape) , )
-    (reduce #(.createUnion %1 %2) ,)
-    rect2d->corners))
-
-(defn zero []
-  {:parts [[:arc 0 0 20 20 0.0 (* 2.0 Math/PI)]]
-   :width 20
-   :bbox (c2d/rect-shape -10 -10 10 10)
-   :in [-10 10]
-   :rotation 0.0
-   :attach [[0 0 0.0]]
-   :sizefn (fn [self bboxes] 
-             (let [bbox    (-> bboxes first :bbox)
-                   [xs ys] (rect2d->corners bbox)]
-               (merge self {:bbox bbox
-                            :parts [[:arc 0 0 xs ys 0.0 fm/TWO_PI]]})
-
-             ))
-   })
-
-(defn one []
-  {:parts  [[:line 0 -20 0 20] [:point 0 -20]]
-   :width 0
-   :bbox (c2d/rect-shape -10 -10 10 10)
-   :in [-10 10]
-   :rotation 0.0
-   :attach [[0 20 fm/-HALF_PI]]
-   :sizefn (fn [self bboxes]
-             (let [bbox    (-> bboxes first :bbox )
-                   [xs ys] (bbox->wh bbox)]
-               (merge self {:bbox bbox
-                            :parts [[:arc 0 0 xs ys 0.0 fm/TWO_PI]]})
-
-               )
-             )
-  })
-
-(defn two []
-  {:parts  [[:line 0 -20 0 20] [:point 0 -20] [:point 0 20]]
-   :width 0
-   :bbox [-10 -10 10 10]
-   :in [-10 10]
-   :rotation 0.0
-   :attach [[0 20 fm/PI] [0 -20 fm/-HALF_PI]]
-   :sizefn (fn [bboxes])
-  })
-
-
-;{:main [:line :one :line :zero :line]}
-
-;"94:c6:91:16:48:49"
-;{:main [:line :nine [:four] :line :c [:six] :line :nine [:one] ]}
-
+(comment
+  (def ts
+    (size-sigil (-> (append-glyph [] :join-line)
+      (append-glyph-at-line-end , 0 :zero)
+      (append-glyph-at-line-end , 0 :join-line)
+      (append-glyph-at-line-end , 0 :one)
+      (append-glyph-at-line-end , 0 :join-line)
+      (attach-child , 1 :zero)
+      (attach-child , 3 :two)
+    ) 0))
+  )

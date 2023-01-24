@@ -1,5 +1,6 @@
 (ns arp-sigils.draw
-  (:require [arp-sigils.glyphs :as g]
+  (:require [arp-sigils.sigils :as s]
+            [arp-sigils.glyphs :as g]
             [clojure2d.core :as c2d]
             [clojure2d.color :as color]
             [clojure2d.pixels :as pix]
@@ -45,14 +46,16 @@
 
 
 (defn draw-glyph [canref glyph]
-  (let [{:keys [parts width in out outglyph subglyphs attach]} glyph
+  (let [{:keys [parts width in out bbox]} glyph
         [inx iny] in
-        ]
-    (c2d/translate canref (* 0.5 width) 0)
-    (c2d/set-color canref :red)
-    (c2d/set-stroke canref 0.5)
+        [outx outy] out ]
+    (c2d/push-matrix canref)
+    ;(c2d/translate canref (- (* 0.5 width) 0)
+    (c2d/translate canref  (* 0.5 width) 0)
+    ;(c2d/set-color canref :red)
+    ;(c2d/set-stroke canref 0.5)
     ;(c2d/arc canref 0 0 20 20 0 fm/TWO_PI)
-    (c2d/set-color canref :green)
+    ;(c2d/set-color canref :green)
     (c2d/set-stroke canref stroke)
     (doseq [part parts
             :let [kind (first part)
@@ -62,77 +65,58 @@
         :point (apply (partial c2d/point canref) params)
         :arc   (apply (partial c2d/arc canref) params)
         ))
-    (if subglyphs
-      (do 
+    (c2d/pop-matrix canref)
+    ))
 
-       (c2d/set-color canref :red)
-       (c2d/set-stroke canref 5)
-       ;(c2d/point canref 0 0)
-      (doseq [[attachment glyph] (map vector attach subglyphs)
-              :let [[x y theta] attachment]]
+(second testsigil)
+(identity testsigil)
+[{:name :join-line, :next 1, :data {:parts [[:line -20 0 20 0]], :width 40, :in [-20 0], :out [20 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0xbdef600 "java.awt.geom.Rectangle2D$Double[x=-20.0,y=-20.0,w=20.0,h=20.0]"]}}
+
+{:name :one, :next 2, :children [5], :data {:parts [[:line 0 -10.0 0 10.0] [:point 0 -10.0]], :width 20.0, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x2a3facd4 "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-20.0,w=20.0,h=40.0]"], :attach [[0 -10.0 1.5707963267948966]]}}
+
+{:name :join-line, :next 3, :data {:parts [[:line -20 0 20 0]], :width 40, :in [-20 0], :out [20 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x4a8d4a21 "java.awt.geom.Rectangle2D$Double[x=-20.0,y=-20.0,w=20.0,h=20.0]"]}}
+{:name :one, :next 4, :children [6], :data {:parts [[:line 0 -10.0 0 10.0] [:point 0 -10.0]], :width 20.0, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x5cd7ac0a "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-20.0,w=20.0,h=40.0]"], :attach [[0 -10.0 1.5707963267948966]]}}
+{:name :join-line, :data {:parts [[:line -20 0 20 0]], :width 40, :in [-20 0], :out [20 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x20453f66 "java.awt.geom.Rectangle2D$Double[x=-20.0,y=-20.0,w=20.0,h=20.0]"]}}
+{:name :zero, :data {:parts [[:arc 0 0 20 20 0.0 6.283185307179586]], :width 20, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x774b7eb6 "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-10.0,w=20.0,h=20.0]"], :attach [[0 0 0.0]]}}
+{:name :zero, :data {:parts [[:arc 0 0 20 20 0.0 6.283185307179586]], :width 20, :in [-10.0 0], :out [10.0 0], :bbox #object[java.awt.geom.Rectangle2D$Double 0x5737fe3c "java.awt.geom.Rectangle2D$Double[x=-10.0,y=-10.0,w=20.0,h=20.0]"], :attach [[0 0 0.0]]}}]
+
+;(map :parts [(g/zero) (g/one) (g/one) (g/zero) (g/two)])
+(defn draw-sigil [canref sigil node]
+  (let [me (get sigil node)
+        {:keys [:next :children :data ]} me
+        out (:out data [20, 0])
+        width (:width data 20)  
+        ]
+    ;(c2d/push-matrix canref)
+    ;(c2d/translate canref sw sh)
+    (c2d/set-color canref :red)
+    (c2d/set-stroke canref 0.5)
+    ;(c2d/crect canref 0 0 width width true)
+    (c2d/set-stroke canref stroke)
+    (c2d/set-color canref 0 (+ 50 (* node 30)) 0)
+    ;(c2d/set-stroke canref stroke)
+    (draw-glyph canref data)
+    (c2d/translate canref out)
+    (c2d/translate canref (* 0.5 width) 0)
+    (if-not (empty? children)
+      (doseq [[child tmatrix] (map vector children (:attach data))
+              :let [[x y theta] tmatrix]]
         (c2d/push-matrix canref)
         (c2d/translate canref x y)
         (c2d/rotate canref theta)
-        ;(c2d/set-color canref :blue)
-        ;(c2d/arc canref 0 0 10 10 0 fm/TWO_PI)
-        (draw-glyph canref glyph)
+        ;(c2d/line canref 0 0 0 100)
+        ;(c2d/line canref 0 0 100 0)
+        (draw-sigil canref sigil child)
         (c2d/pop-matrix canref)
-      ))
-      )
-    (if outglyph
-      (do 
-        (apply (partial c2d/translate canref) out)
-        ;(c2d/translate canref width 0)
-        (draw-glyph canref outglyph)
         )
-      )))
+      )
+    (when next
+        (draw-sigil canref sigil next)
+        )
 
-;(map :parts [(g/zero) (g/one) (g/one) (g/zero) (g/two)])
-(defn draw-sigil [canvas sigil]
-  (c2d/with-canvas [canref canvas]
-                   (let [hw (* 0.5 (:w canref))
-                         sw (- hw (* 0.5 hw))
-                         sh (* 0.5 (:h canref))
-                         strokespacer 20
-                         ]
+    ))
 
-                     (c2d/push-matrix canref)
-                     (c2d/translate canref sw sh)
-                     (c2d/set-color canref :green)
-                     (c2d/set-stroke canref stroke)
-                     (draw-glyph canref sigil)
-                     (comment loop [glyph sigils
-                            ;x 0
-                            ;y 0
-                            ]
-                       (if (nil? sigils)
-                         nil
-                         (let [sigil (first sigils)
-                               in    (:in sigil)
-                               out   (:out sigil)
-                               width (:width sigil)
-                               half  (* 0.5 width)]
-                           (c2d/set-color canref :lime)
-                           (c2d/line canref [0 0] [strokespacer 0])
-                           (c2d/set-color canref :green)
-                           (c2d/translate canref [(+ strokespacer half) 0])
-                           (draw-strokes canref sigil)
-                           (c2d/translate canref [half 0])
-                           (recur (next sigils) )
 
-                           )
-                         )
-                       
-                       )
-                     )))
-
-(def testsigil 
-  (g/attach-out-glyph 
-    (g/zero)
-    (g/attach-out-glyph (g/join-line) 
-                        (g/attach-glyph (g/one) (g/two)))))
-
-(def testsigil (g/size-glyph testsigil))
 
 (defn digit->glyphfn [d]
   (case d
@@ -166,23 +150,31 @@
     
     ))
 
+(def lineno (atom 20))
 (defn draw-testbed [canvas]
   (comment c2d/with-canvas [canvas canvas]
-                   ;(draw-sigil canvas (g/two))
-                   (c2d/set-color canvas :red)
-                   (c2d/set-stroke canvas 1)
-                   (c2d/translate canvas 100 100)
-                   (c2d/line canvas -100 0 100 0)
-                   (c2d/line canvas 0 -100 0 100)
-                   (c2d/arc canvas 0 0 100 100 0 fm/TWO_PI)
-                   (c2d/arc canvas 0 0 200 200 0 fm/TWO_PI)
-                   (c2d/shape canvas (c2d/rect-shape -10 -10 20 20))
-                   ;(c2d/shape canvas (g/attach-rect2d-at (c2d/rect-shape -10 -10 20 20) 0 -10 -10 0 fm/-HALF_PI) true)
-                   
-                   )
-  (c2d/with-canvas [canvas canvas]
-                   (draw-sigil canvas testsigil)
-  ))
+           ;(draw-sigil canvas (g/two))
+           (c2d/set-color canvas :red)
+           (c2d/set-stroke canvas 1)
+           (c2d/translate canvas 100 100)
+           (c2d/line canvas -100 0 100 0)
+           (c2d/line canvas 0 -100 0 100)
+           (c2d/arc canvas 0 0 100 100 0 fm/TWO_PI)
+           (c2d/arc canvas 0 0 200 200 0 fm/TWO_PI)
+           (c2d/shape canvas (c2d/rect-shape -10 -10 20 20))
+           ;(c2d/shape canvas (g/attach-rect2d-at (c2d/rect-shape -10 -10 20 20) 0 -10 -10 0 fm/-HALF_PI) true)
+
+           )
+  (reset! lineno 20)
+  (let [
+          hw (* 0.5 (:w canvas))
+          hh (* 0.5 (:h canvas))
+        ] 
+    (c2d/with-canvas [canref canvas]
+                     (c2d/translate canref (* 0.25 hw) hh)
+                     (draw-sigil canref testsigil 0)
+                     )
+    ))
 
 (defn draw-error [canvas]
   (let [exc     (:exception @state)
@@ -220,7 +212,8 @@
 (defn draw [canvas _ _ _]
   (try
     (c2d/with-canvas-> canvas 
-                       (c2d/set-background :black)) 
+                       (c2d/set-background :black)
+                       ) 
 
     (case (:mode @state)
       :error (draw-error canvas)
@@ -261,6 +254,29 @@
     ))
 
 (comment
+  (def testsigil 
+    (s/size-sigil (-> (s/append-glyph [] :join-line)
+      (s/append-glyph-at-line-end , 0 :one)
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 :one)
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/attach-child , 1 :zero)
+      (s/attach-child , 3 :zero)
+    ) 0))
+  (def testsigil 
+    (s/size-sigil (-> (s/append-glyph [] :join-line)
+      (s/append-glyph-at-line-end , 0 :two)
+      (s/attach-child , 1 :zero)
+    ) 0))
+  (def testsigil 
+    (s/size-sigil (-> (s/append-glyph [] :join-line)
+      (s/append-glyph-at-line-end , 0 :zero)
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 :one)
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 :two)
+    ) 0))
+
   (def pi (.. (c2d/rect-shape 0 0 10 10) (getPathIterator nil) ))
   (def a (double-array 6))
   (.isDone pi)
