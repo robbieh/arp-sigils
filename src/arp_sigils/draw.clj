@@ -12,7 +12,10 @@
 (def state (atom {:mode :sigil
                   :addr "94:c6:91:16:48:49"
                   :exception nil
-                  :exception-timeout 0}))
+                  :exception-timeout 0
+                  :sigil nil
+                  }))
+(def sigils (atom {}))
 (def errstate (atom {}))
 
 (def stroke 3)
@@ -47,6 +50,40 @@
                    (:attach strokes)
   )
 
+(defn line-pct [canref pct x1 y1 x2 y2]
+  (let [pct   (* 0.1 pct)
+        xdiff (* 0.1 (- x2 x1))
+        ydiff (* 0.1 (- y2 y1))
+        xnew  (+ x1 (* pct xdiff))
+        ynew  (+ y1 (* pct ydiff))
+        ]
+    (c2d/line canref x1 y1 xnew ynew)))
+
+(defn arc-pct [canref pct x y w h start end]
+  (let [pct    (* 0.01 pct)
+        diff   (- end start)
+        newend (+ start (* pct diff))
+        ]
+    (c2d/arc canref x y w h start newend)))
+
+(defn draw-glyph-pct [canref glyph]
+  (let [{:keys [parts width in out bbox]} glyph
+        pct (get glyph :pct 0)
+        [inx iny] in
+        [outx outy] out ]
+    (c2d/push-matrix canref)
+    (c2d/set-stroke canref stroke)
+    (doseq [part parts
+            :let [kind (first part)
+                  params (rest part)]]
+      (case kind
+        :line  (apply (partial line-pct canref pct) params)
+        :point (apply (partial c2d/point canref) params)
+        :arc   (apply (partial arc-pct canref pct) params)
+        ))
+    (c2d/pop-matrix canref)
+    (inc pct)
+    ))
 
 (defn draw-glyph [canref glyph]
   (let [{:keys [parts width in out bbox]} glyph
@@ -71,14 +108,47 @@
     (c2d/pop-matrix canref)
     ))
 
-;(map :parts [(g/zero) (g/one) (g/one) (g/zero) (g/two)])
-(defn draw-sigil [canref sigil node]
-  (let [me (get sigil node)
+
+(defn draw-sigil-pct [canref sigilkey node]
+  (let [sigil  (get @sigils sigilkey)
+        me     (get sigil node)
         {:keys [:next :children :data ]} me
-        out (:out data [20, 0])
-        width (:width data 20)  
-        n (get sigil next)
-        in (negpoint (get-in n [:data :in] [0 0]))
+        out    (:out data [20, 0])
+        width  (:width data 20)  
+        pct    (min (:pct data 0) 100)
+        n      (get sigil next)
+        in     (negpoint (get-in n [:data :in] [0 0]))
+        ]
+    (c2d/set-stroke canref stroke)
+    (c2d/set-color canref :lime)
+    (draw-glyph-pct canref data )
+    (when (>= pct 100 ) 
+      (if-not (empty? children)
+        (doseq [[child tmatrix] (map vector children (:attach data))
+                :let [[x y theta] tmatrix
+                      chin (get-in sigil [child :data :in] )]]
+          (c2d/push-matrix canref)
+          (c2d/translate canref x y)
+          (c2d/rotate canref theta)
+          (c2d/translate canref (negpoint chin))
+          (draw-sigil-pct canref sigilkey child)
+          (c2d/pop-matrix canref)
+          )))
+    (c2d/translate canref out)
+    (c2d/translate canref in)
+    ;(c2d/translate canref (* 0.5 width) 0)
+    (when (and (>= pct 100) next)
+        (draw-sigil-pct canref sigilkey next))
+    (swap! sigils assoc-in [sigilkey node :data :pct] (inc pct))
+    ))
+
+(defn draw-sigil [canref sigil node]
+  (let [me     (get sigil node)
+        {:keys [:next :children :data ]} me
+        out    (:out data [20, 0])
+        width  (:width data 20)  
+        n      (get sigil next)
+        in     (negpoint (get-in n [:data :in] [0 0]))
         ]
     (c2d/set-color canref :red)
     (c2d/set-stroke canref 0.75)
@@ -162,7 +232,7 @@
         ] 
     (c2d/with-canvas [canref canvas]
                      (c2d/translate canref (* 0.25 hw) hh)
-                     (draw-sigil canref testsigil 0)
+                     (draw-sigil-pct canref :s1 0)
                      )
     ))
 
@@ -245,19 +315,25 @@
 
 (comment
   (start false)
+  (type @sigils)
+  (keys @sigils)
+  (swap! sigils assoc :s1 testsigil)
+  (identity testsigil)
+  (identity @sigils)
+  (swap! sigils assoc-in [:s1 0 :data :pct] 10)
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)
-      (s/append-glyph-at-line-end , 0 :three)
-      (s/append-glyph-at-line-end , 0 :join-line)
       (s/append-glyph-at-line-end , 0 :zero)
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 :one)
       (s/append-glyph-at-line-end , 0 :join-line)
       (s/append-glyph-at-line-end , 0 :two)
       (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :one)
+      (s/append-glyph-at-line-end , 0 :three)
       (s/attach-child , 1 :zero)
-      (s/attach-child , 3 :two)
-      (s/attach-child , 5 :two)
-      (s/attach-child , 7 :three)
+      (s/attach-child , 3 :zero)
+      (s/attach-child , 5 :zero)
+      (s/attach-child , 7 :zero)
     ) 0))
   
   (def testsigil 
@@ -274,6 +350,7 @@
       (s/append-glyph-at-line-end , 0 :two)
     ) 0))
 
-  (c2d/with-canvas [canref canvas])
+  (c2d/with-canvas [canref canvas]
+                   (line-pct canref 50 0 0 1000 1000))
   
   )

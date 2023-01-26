@@ -78,7 +78,8 @@
    :zero 1
    :one 1
    :two 2
-   :three 3})
+   :three 3
+   :four 4})
 
 
 (defn size-join-line [_]
@@ -147,7 +148,6 @@
      :bbox (c2d/crect-shape 0 0  combyw combyh)
      :attach [[0 (- hmyh) fm/-HALF_PI] [0 hmyh fm/HALF_PI]] }))    
 
-;(size-three [(size-zero nil) (size-zero nil)])
 (defn size-three [children]
   (println "three " children)
   (let [childbbs (map :bbox children)
@@ -157,6 +157,7 @@
         newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
         newws    (mapv first newbb)
         newhs    (mapv second newbb)
+        _ (println newws newhs)
         myw     (+ 20 (reduce + (take 2 newws)))
         myh     (+ 20 (reduce + (take-last 2 newhs)))
         ;combyw  (apply max (conj cws myw))
@@ -179,7 +180,38 @@
               [0 hmyh (fm/radians 90)]
               ] }))
 
-
+;(size-four [(size-zero nil) (size-zero nil)])
+(defn size-four [children]
+  (println "four " children)
+  (let [childbbs (map :bbox children)
+        cws      (mapv #(.getWidth %) childbbs)
+        chs      (mapv #(.getHeight %) childbbs)
+        thetas   [(fm/radians 315) (fm/radians 225) (fm/radians 90)]
+        newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
+        newws    (mapv first newbb)
+        newhs    (mapv second newbb)
+        _ (println newws newhs)
+        myw     (+ 20 (reduce + (take 2 newws)))
+        myh     (+ 20 (reduce + (take-last 2 newhs)))
+        ;combyw  (apply max (conj cws myw))
+        ;combyh  (apply + (conj chs myh))
+        hmyw    (* 0.5 myw)
+        hmyh    (* 0.5 myh)
+        ]
+    {:parts [[:line (- hmyw) 0 0 0]
+             [:line 0 0 0 hmyh] [:line 0 0 (- hmyw) (- hmyh)] [:line 0 0 hmyw (- hmyh)]
+             [:point (- hmyw) (- hmyh)] [:point hmyw (- hmyh)] [:point 0 hmyh]
+             [:line 0 0 hmyw 0]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw myh)
+     :attach [
+              [(- hmyw) (- hmyh) (fm/radians 225)]
+              [hmyw (- hmyh) (fm/radians 315)]
+              [0 hmyh (fm/radians 90)]
+              ] }))
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
