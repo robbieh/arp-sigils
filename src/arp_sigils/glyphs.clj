@@ -5,6 +5,10 @@
 (defn scale [x]
   (* 10 x))
 
+;MS - minimum size
+(def MS 40)
+(def -MS (- MS))
+
 (defn empty-glyph [name] {:name name })
 
 
@@ -83,17 +87,17 @@
 
 
 (defn size-join-line [_]
-  {:parts [[:line -20 0 20 0]]
-   :width 40
-   :in [-20 0]
-   :out [20 0]
-   :bbox (c2d/rect-shape -20 -20 20 20)
+  {:parts [[:line -MS 0 MS 0]]
+   :width (* 2 MS)
+   :in [-MS 0]
+   :out [MS 0]
+   :bbox (c2d/rect-shape -MS -MS MS MS)
    })
 
 (defn size-zero [children]
   (let [childbb (-> children first :bbox)
-        w       (if childbb (.getWidth childbb) 20)
-        h       (if childbb (.getHeight childbb) 20)
+        w       (if childbb (.getWidth childbb) MS)
+        h       (if childbb (.getHeight childbb) MS)
         myw     (max w h)
         hmyw    (* 0.5 myw)]
     {:parts [[:arc 0 0 myw myw 0.0 (* 2.0 Math/PI)]]
@@ -128,8 +132,8 @@
   (let [childbbs (map :bbox children)
         cws      (mapv #(.getWidth %) childbbs)
         chs      (mapv #(.getHeight %) childbbs)
-        myw     20
-        myh     40
+        myw     MS
+        myh     (* 2 MS)
         combyw  (apply max (conj cws myw))
         combyh  (apply + (conj chs myh))
         hmyw    (* 0.5 myw)
@@ -158,8 +162,8 @@
         newws    (mapv first newbb)
         newhs    (mapv second newbb)
         _ (println newws newhs)
-        myw     (+ 20 (reduce + (take 2 newws)))
-        myh     (+ 20 (reduce + (take-last 2 newhs)))
+        myw     (+ MS (reduce + (take 2 newws)))
+        myh     (+ MS (reduce + (take-last 2 newhs)))
         ;combyw  (apply max (conj cws myw))
         ;combyh  (apply + (conj chs myh))
         hmyw    (* 0.5 myw)
