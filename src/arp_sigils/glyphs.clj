@@ -378,8 +378,8 @@
         outp    [hmyw 0]
         W       [(- fmyw) 0]
         E       [fmyw 0]
-        NW      [(- fmyw) (* 2 fmyh)]
-        NE      [fmyw (* 2 fmyh)]
+        NW      [(- fmyw) (* 1 fmyh)]
+        NE      [fmyw (* 1 fmyh)]
         SW      [(- fmyw) (* -1 fmyh)]
         SE      [fmyw (* -1 fmyh)]
         coreN   [0 hmyh]
@@ -401,6 +401,46 @@
               ]
      }))
 
+(defn size-ten [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     newmaxw
+        myh     (* 2 MS)
+        hmyw    (* 1/2 myw)
+        fmyw    (* 1/6 myw)
+        hmyh    (* 1/2 myh) 
+        fmyh    (* 1/5 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        N       [0 fmyh]
+        S       [0 (- fmyh)]
+        NW      [(* -2 fmyw) (* 1 fmyh)]
+        NE      [(* 2 fmyw) (* 1 fmyh)]
+        SW      [(* -2 fmyw) (* -1 fmyh)]
+        SE      [(* 2 fmyw) (* -1 fmyh)]
+        coreN   [0 hmyh]
+        coreS   [0 (- hmyh)]
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [[:line inp outp]
+             [:line NW N][:line NE N]
+             [:line SW S][:line SE S]
+             [:line N coreN]
+             [:line S coreS]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [0 (- hmyh) (fm/radians 270)]
+              [0 hmyh (fm/radians 90)]
+              ]
+     }))
+
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
@@ -413,6 +453,7 @@
    :seven     size-seven
    :eight     size-eight
    :nine      size-nine
+   :ten       size-ten
    })
 ;(defn join-line [sigil node]
 ;  (let [me (get sigil node)
