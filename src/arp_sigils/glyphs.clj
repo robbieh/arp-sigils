@@ -184,44 +184,66 @@
               [0 hmyh (fm/radians 90)]
               ] }))
 
-;(size-four [(size-zero nil) (size-zero nil)])
+(size-four [(size-zero nil) (size-zero nil)(size-zero nil)(size-zero nil) ])
 (defn size-four [children]
   (println "four " children)
   (let [childbbs (map :bbox children)
         cws      (mapv #(.getWidth %) childbbs)
         chs      (mapv #(.getHeight %) childbbs)
-        thetas   [(fm/radians 315) (fm/radians 225) (fm/radians 90)]
+        thetas   [(fm/radians 270) (fm/radians 270) (fm/radians 90) (fm/radians 90)]
         newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
         newws    (mapv first newbb)
         newhs    (mapv second newbb)
+        newmaxw  (apply max newws)
+        newmaxh  (apply max newhs)
         _ (println newws newhs)
-        myw     (+ 20 (reduce + (take 2 newws)))
-        myh     (+ 20 (reduce + (take-last 2 newhs)))
-        ;combyw  (apply max (conj cws myw))
-        ;combyh  (apply + (conj chs myh))
+        qs      (* 0.25 MS)
+        hs      (* 0.5 MS)
+        myw     (+ MS (* 0.5 newmaxw))
+        myh     (+ MS newmaxh)
+        mid     0
         hmyw    (* 0.5 myw)
         hmyh    (* 0.5 myh)
+        dpN     [mid (- qs)]
+        dpE     [(+ mid qs) 0]
+        dpS     [mid qs]
+        dpW     [(- mid qs) 0]
+        apNW    [(- hmyw) (- hmyh)]
+        apNE    [hmyw (- hmyh)]
+        apSE    [hmyw  hmyh]
+        apSW    [(- hmyw) hmyh]
         ]
-    {:parts [[:line (- hmyw) 0 0 0]
-             [:line 0 0 0 hmyh] [:line 0 0 (- hmyw) (- hmyh)] [:line 0 0 hmyw (- hmyh)]
-             [:point (- hmyw) (- hmyh)] [:point hmyw (- hmyh)] [:point 0 hmyh]
-             [:line 0 0 hmyw 0]
+    {:parts [[:line [(- hmyw) 0] dpW]
+             ;diamond
+             ;[:line (- mid qs) 0 mid qs] [:line mid qs (+ mid qs) 0] 
+             ;[:line (+ mid qs) 0 mid (- qs)] [:line mid (- qs) (- mid qs) 0]
+             [:line dpN dpE] [:line dpE dpS] [:line dpS dpW] [:line dpW dpN]
+             ;arrows tl tr bl br
+             [:line dpW apNW] [:line dpN apNW]
+             [:line dpE apNE] [:line dpN apNE]
+             [:line dpW apSW] [:line dpS apSW]
+             [:line dpE apSE] [:line dpS apSE]
+             ;out
+             [:line dpE [hmyw 0]]
              ]
      :width myw
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  myw myh)
      :attach [
-              [(- hmyw) (- hmyh) (fm/radians 225)]
-              [hmyw (- hmyh) (fm/radians 315)]
-              [0 hmyh (fm/radians 90)]
+              [(- hmyw) (- hmyh) (fm/radians 270)]
+              [hmyw (- hmyh) (fm/radians 270)]
+              [(- hmyw) hmyh (fm/radians 90)]
+              [hmyw hmyh (fm/radians 90)]
               ] }))
+
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
    :one       size-one
    :two       size-two
    :three     size-three
+   :four      size-four
    })
 ;(defn join-line [sigil node]
 ;  (let [me (get sigil node)
