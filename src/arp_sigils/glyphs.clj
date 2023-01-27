@@ -85,6 +85,9 @@
    :three 3
    :four 4
    :five 1
+   :six 2
+   :seven 3
+   :eight 4
    })
 
 
@@ -260,6 +263,61 @@
      :attach [[0 tmyh  (fm/radians 90)]]
      }))
 
+(defn size-six [children]
+  (println "six" children)
+  (let [childbbs (map :bbox children)
+        cws     (mapv #(.getWidth %) childbbs)
+        chs     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max cws)
+        newmaxh (apply max chs)
+        myw     (* 2 newmaxw)
+        myh     (* 1.5 newmaxh)
+        hmyw    (* 0.5 myw)
+        hhmyw   (* 0.25 myw)
+        tmyh    (* 1/3 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        mp      [0 0]
+        tip1    [(- hhmyw) (- tmyh)]
+        tip2    [hhmyw (- tmyh)]
+        ]
+    {:parts [[:line inp tip1][:line tip1 mp][:line mp tip2][:line tip2 outp]]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw myh)
+     :attach [[(- hhmyw) (- tmyh)  (fm/radians 270)][hhmyw (- tmyh) (fm/radians 270)]]
+     }))
+
+(defn size-seven [children]
+  (println "seven" children)
+  (let [childbbs (map :bbox children)
+        cws     (mapv #(.getWidth %) childbbs)
+        chs     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max cws)
+        newmaxh (apply max chs)
+        myw     (* 2 newmaxw)
+        myh     (* 1.5 newmaxh)
+        hmyw    (* 0.5 myw)
+        smyw    (* 1/6 myw) 
+        tmyh    (* 1/3 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        tip1    [(- (* 2 smyw)) tmyh]
+        tip2    [0 (- tmyh)]
+        tip3    [(* 2 smyw) tmyh]
+        ]
+    {:parts [[:line inp tip1][:line tip1 tip2][:line tip2 tip3][:line tip3 outp]]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw myh)
+     :attach [
+              [(first tip1) tmyh  (fm/radians 90)]
+              [0 (- tmyh) (fm/radians 270)]
+              [(first tip3) tmyh  (fm/radians 90)]
+              ]
+     }))
 
 
 
@@ -271,6 +329,8 @@
    :three     size-three
    :four      size-four
    :five      size-five
+   :six       size-six
+   :seven     size-seven
    })
 ;(defn join-line [sigil node]
 ;  (let [me (get sigil node)
