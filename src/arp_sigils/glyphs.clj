@@ -88,6 +88,13 @@
    :six 2
    :seven 3
    :eight 4
+   :nine 1
+   :ten 2
+   :eleven 3
+   :twelve 4
+   :thirteen 1
+   :fourteen 2
+   :fifteen 3
    })
 
 
@@ -158,7 +165,6 @@
      :attach [[0 (- hmyh) fm/-HALF_PI] [0 hmyh fm/HALF_PI]] }))    
 
 (defn size-three [children]
-  (println "three " children)
   (let [childbbs (map :bbox children)
         cws      (mapv #(.getWidth %) childbbs)
         chs      (mapv #(.getHeight %) childbbs)
@@ -166,7 +172,6 @@
         newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
         newws    (mapv first newbb)
         newhs    (mapv second newbb)
-        _ (println newws newhs)
         myw     (+ MS (reduce + (take 2 newws)))
         myh     (+ MS (reduce + (take-last 2 newhs)))
         ;combyw  (apply max (conj cws myw))
@@ -190,17 +195,15 @@
               ] }))
 
 (defn size-four [children]
-  (println "four " children)
   (let [childbbs (map :bbox children)
-        cws      (mapv #(.getWidth %) childbbs)
-        chs      (mapv #(.getHeight %) childbbs)
+        chs      (mapv #(.getWidth %) childbbs)
+        cws      (mapv #(.getHeight %) childbbs)
         thetas   [(fm/radians 270) (fm/radians 270) (fm/radians 90) (fm/radians 90)]
         newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
         newws    (mapv first newbb)
         newhs    (mapv second newbb)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
-        _ (println newws newhs)
         qs      (* 0.25 MS)
         hs      (* 0.5 MS)
         myw     (+ MS (* 0.5 newmaxw))
@@ -241,10 +244,9 @@
 
 ;(size-five [(size-zero nil)])
 (defn size-five [children]
-  (println "five " children)
   (let [childbbs (map :bbox children)
-        cws     (mapv #(.getWidth %) childbbs)
-        chs     (mapv #(.getHeight %) childbbs)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
         myw     (max MS newmaxw)
@@ -264,10 +266,9 @@
      }))
 
 (defn size-six [children]
-  (println "six" children)
   (let [childbbs (map :bbox children)
-        cws     (mapv #(.getWidth %) childbbs)
-        chs     (mapv #(.getHeight %) childbbs)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
         myw     (* 2 newmaxw)
@@ -290,10 +291,9 @@
      }))
 
 (defn size-seven [children]
-  (println "seven" children)
   (let [childbbs (map :bbox children)
-        cws     (mapv #(.getWidth %) childbbs)
-        chs     (mapv #(.getHeight %) childbbs)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
         myw     (* 2 newmaxw)
@@ -319,7 +319,87 @@
               ]
      }))
 
+(defn size-eight [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     (* 2 newmaxw)
+        myh     (* 2 MS)
+        hmyw    (* 1/2 myw)
+        qmyw    (* 1/4 myw)
+        hmyh    (* 1/2 myh) 
+        qmyh    (* 1/4 myh) 
+        emyh    (* 1/8 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        vertN   [0 (- qmyh)]
+        vertS   [0 qmyh]
+        horzNW  [(- qmyw) (- qmyh)]
+        horzNE  [qmyw (- qmyh)]
+        horzSW  [(- qmyw) qmyh]
+        horzSE  [qmyw qmyh]
+        shortN  [(- qmyw) (* -5 emyh)]
+        shortS  [qmyw (* 5 emyh)]
+        longN   [qmyw (* -7 emyh)]
+        longS   [(- qmyw) (* 7 emyh)]
+        toth    (+ myh (* 2 newmaxh))
+        ]
+    {:parts [
+             [:line inp outp][:line vertN vertS]
+             [:line horzNW horzNE] [:line horzSW horzSE]
+             [:line horzNW shortN] [:line horzNE longN]
+             [:line horzSW longS] [:line horzSE shortS]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [[(first horzNW) (second shortN)  (fm/radians 270)]
+              [(first horzNE) (second longN)  (fm/radians 270)]
+              [(first horzSW) (second longS)  (fm/radians 90)]
+              [(first horzSE) (second shortS)  (fm/radians 90)]]
+     }))
 
+(defn size-nine [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     (* 2 newmaxw)
+        myh     (* 2 MS)
+        hmyw    (* 1/2 myw)
+        fmyw    (* 1/6 myw)
+        hmyh    (* 1/2 myh) 
+        fmyh    (* 1/5 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        W       [(- fmyw) 0]
+        E       [fmyw 0]
+        NW      [(- fmyw) (* 2 fmyh)]
+        NE      [fmyw (* 2 fmyh)]
+        SW      [(- fmyw) (* -1 fmyh)]
+        SE      [fmyw (* -1 fmyh)]
+        coreN   [0 hmyh]
+        coreS   [0 (- hmyh)]
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [[:line inp W]
+             [:line NW SW][:line NE SE]
+             [:line coreN coreS]
+             [:line E outp]
+             [:point 0 hmyh]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [0 (- hmyh) (fm/radians 270)]
+              ]
+     }))
 
 (def size-function-map
   {:join-line size-join-line
@@ -331,6 +411,8 @@
    :five      size-five
    :six       size-six
    :seven     size-seven
+   :eight     size-eight
+   :nine      size-nine
    })
 ;(defn join-line [sigil node]
 ;  (let [me (get sigil node)
