@@ -83,7 +83,9 @@
    :one 1
    :two 2
    :three 3
-   :four 4})
+   :four 4
+   :five 1
+   })
 
 
 (defn size-join-line [_]
@@ -184,7 +186,6 @@
               [0 hmyh (fm/radians 90)]
               ] }))
 
-(size-four [(size-zero nil) (size-zero nil)(size-zero nil)(size-zero nil) ])
 (defn size-four [children]
   (println "four " children)
   (let [childbbs (map :bbox children)
@@ -215,10 +216,8 @@
         ]
     {:parts [[:line [(- hmyw) 0] dpW]
              ;diamond
-             ;[:line (- mid qs) 0 mid qs] [:line mid qs (+ mid qs) 0] 
-             ;[:line (+ mid qs) 0 mid (- qs)] [:line mid (- qs) (- mid qs) 0]
              [:line dpN dpE] [:line dpE dpS] [:line dpS dpW] [:line dpW dpN]
-             ;arrows tl tr bl br
+             ;arrows 
              [:line dpW apNW] [:line dpN apNW]
              [:line dpE apNE] [:line dpN apNE]
              [:line dpW apSW] [:line dpS apSW]
@@ -237,6 +236,33 @@
               [hmyw hmyh (fm/radians 90)]
               ] }))
 
+;(size-five [(size-zero nil)])
+(defn size-five [children]
+  (println "five " children)
+  (let [childbbs (map :bbox children)
+        cws     (mapv #(.getWidth %) childbbs)
+        chs     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max cws)
+        newmaxh (apply max chs)
+        myw     (max MS newmaxw)
+        myh     (* 1.5 newmaxh)
+        hmyw    (* 0.5 myw)
+        tmyh    (* 1/3 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        mp      [0 tmyh]
+        ]
+    {:parts [[:line inp mp][:line mp outp]]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw myh)
+     :attach [[0 tmyh  (fm/radians 90)]]
+     }))
+
+
+
+
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
@@ -244,6 +270,7 @@
    :two       size-two
    :three     size-three
    :four      size-four
+   :five      size-five
    })
 ;(defn join-line [sigil node]
 ;  (let [me (get sigil node)
