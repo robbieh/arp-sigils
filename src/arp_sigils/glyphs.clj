@@ -164,7 +164,7 @@
      :bbox (c2d/crect-shape 0 0  combyw combyh)
      :attach [[0 (- hmyh) fm/-HALF_PI] [0 hmyh fm/HALF_PI]] }))    
 
-(defn size-three [children]
+(defn old-size-three [children]
   (let [childbbs (map :bbox children)
         cws      (mapv #(.getWidth %) childbbs)
         chs      (mapv #(.getHeight %) childbbs)
@@ -194,6 +194,47 @@
               [0 hmyh (fm/radians 90)]
               ] }))
 
+(defn size-three [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        thetas   [(fm/radians 315) (fm/radians 225) (fm/radians 90)]
+        newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
+        newws    (mapv first newbb)
+        newhs    (mapv second newbb)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     MS
+        myh     MS
+        hmyw    (* 1/2 myw)
+        hmyh    (* 1/2 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        NW      [(- hmyw) (- hmyh)]
+        NE      [hmyw (- hmyh)]
+        S       [0 hmyh]
+        W       [(- hmyw) 0]
+        E       [hmyw 0]
+        center  [0 0]
+        toth    (+ myh (first newws) (last newws))
+        totw    (+ myw (first newws) (second newws))
+        ]
+    {:parts [[:line inp center]
+             [:line center NW][:line center NE]
+             [:line center S]
+             [:line outp center]
+             [:point 0 hmyh]
+             ]
+     :width totw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  totw toth)
+     :attach [
+              [(- hmyw) (- hmyh) (fm/radians 225)]
+              [hmyw (- hmyh) (fm/radians 315)]
+              [0 hmyh (fm/radians 90)]
+              ]
+     }))
 (defn size-four [children]
   (let [childbbs (map :bbox children)
         chs      (mapv #(.getWidth %) childbbs)
