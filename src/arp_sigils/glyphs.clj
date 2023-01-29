@@ -172,8 +172,8 @@
         newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
         newws    (mapv first newbb)
         newhs    (mapv second newbb)
-        myw     (+ MS (reduce + (take 2 newws)))
-        myh     (+ MS (reduce + (take-last 2 newhs)))
+        myw     (+ 0 (reduce + (take 2 newws)))
+        myh     (+ 0 (reduce + (take-last 2 newhs)))
         ;combyw  (apply max (conj cws myw))
         ;combyh  (apply + (conj chs myh))
         hmyw    (* 0.5 myw)
@@ -368,20 +368,21 @@
         cws     (mapv #(.getHeight %) childbbs)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
-        myw     (* 2 newmaxw)
+        myw     newmaxw
         myh     (* 2 MS)
         hmyw    (* 1/2 myw)
-        fmyw    (* 1/6 myw)
+        fmyw    (* 1/5 myw)
         hmyh    (* 1/2 myh) 
         fmyh    (* 1/5 myh) 
+        fMS     (* 1/5 MS)
         inp     [(- hmyw) 0]
         outp    [hmyw 0]
-        W       [(- fmyw) 0]
-        E       [fmyw 0]
-        NW      [(- fmyw) (* 1 fmyh)]
-        NE      [fmyw (* 1 fmyh)]
-        SW      [(- fmyw) (* -1 fmyh)]
-        SE      [fmyw (* -1 fmyh)]
+        W       [(- fMS) 0]
+        E       [fMS 0]
+        NW      [(- fMS) (* 1 fmyh)]
+        NE      [fMS (* 1 fmyh)]
+        SW      [(- fMS) (* -1 fmyh)]
+        SE      [fMS (* -1 fmyh)]
         coreN   [0 hmyh]
         coreS   [0 (- hmyh)]
         toth    (+ myh newmaxh)
@@ -410,17 +411,18 @@
         myw     newmaxw
         myh     (* 2 MS)
         hmyw    (* 1/2 myw)
-        fmyw    (* 1/6 myw)
+        fmyw    (* 1/5 myw)
         hmyh    (* 1/2 myh) 
         fmyh    (* 1/5 myh) 
+        fMS     (* 1/5 MS)
         inp     [(- hmyw) 0]
         outp    [hmyw 0]
-        N       [0 fmyh]
-        S       [0 (- fmyh)]
-        NW      [(* -2 fmyw) (* 1 fmyh)]
-        NE      [(* 2 fmyw) (* 1 fmyh)]
-        SW      [(* -2 fmyw) (* -1 fmyh)]
-        SE      [(* 2 fmyw) (* -1 fmyh)]
+        N       [0 fMS]
+        S       [0 (- fMS)]
+        NW      [(* -2 fmyw) (* 1 fMS)]
+        NE      [(* 2 fmyw) (* 1 fMS)]
+        SW      [(* -2 fmyw) (* -1 fMS)]
+        SE      [(* 2 fmyw) (* -1 fMS)]
         coreN   [0 hmyh]
         coreS   [0 (- hmyh)]
         toth    (+ myh newmaxh)
@@ -441,6 +443,64 @@
               ]
      }))
 
+(defn size-eleven [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     MS
+        myh     MS
+        hmyw    (* 1/2 myw)
+        fmyw    (* 1/5 myw)
+        hmyh    (* 1/2 myh) 
+        fmyh    (* 1/5 myh) 
+        fMS     (* 1/5 MS)
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        S       [0 fMS]
+        N       [0 (- fMS)]
+        E       [fMS 0]
+        W       [(- fMS) 0]
+        SW      [(* -1 fMS) (* 1 fMS)]
+        SSW     [(* -1 fMS) (* 3 fMS)]
+        SWW     [(* -3 fMS) (* 1 fMS)]
+        SE      [(* 1 fMS) (* 1 fMS)]
+        SSE     [(* 1 fMS) (* 3 fMS)]
+        SEE     [(* 3 fMS) (* 1 fMS)]
+        NW      [(* -1 fMS) (* -1 fMS)]
+        NNW     [(* -1 fMS) (* -3 fMS)]
+        NWW     [(* -3 fMS) (* -1 fMS)]
+        NE      [(* 1 fMS) (* -1 fMS)]
+        NNE     [(* 1 fMS) (* -3 fMS)]
+        NEE     [(* 3 fMS) (* -1 fMS)]
+        forkSW  [(* -2 fMS) (* 4 fMS)]
+        forkSE  [(* 2 fMS) (* 4 fMS)]
+        coreS   [0 hmyh]
+        coreN   [0 (- hmyh)]
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [[:line inp W]
+             [:line NW NNW][:line NW NWW]
+             [:line NE NNE][:line NE NEE]
+             [:line SW SSW][:line SW SWW]
+             [:line SE SSE][:line SE SEE]
+             [:line N coreN][:line S coreS]
+             [:line forkSW forkSE]
+             [:line outp E]
+
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [0 (- hmyh) (fm/radians 270)]
+              [0 hmyh (fm/radians 90)]
+              [0 hmyh (fm/radians 90)]
+              ]
+     }))
+
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
@@ -454,6 +514,7 @@
    :eight     size-eight
    :nine      size-nine
    :ten       size-ten
+   :eleven    size-eleven
    })
 ;(defn join-line [sigil node]
 ;  (let [me (get sigil node)
