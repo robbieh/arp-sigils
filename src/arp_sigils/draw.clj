@@ -50,14 +50,20 @@
                    (:attach strokes)
   )
 
-(defn line-pct [canref pct x1 y1 x2 y2]
-  (let [pct   (* 0.1 pct)
-        xdiff (* 0.1 (- x2 x1))
-        ydiff (* 0.1 (- y2 y1))
-        xnew  (+ x1 (* pct xdiff))
-        ynew  (+ y1 (* pct ydiff))
-        ]
-    (c2d/line canref x1 y1 xnew ynew)))
+(defn line-pct 
+  ([canref pct p1 p2]
+   (let [[x1 y1] p1
+         [x2 y2] p2]
+     (line-pct canref pct x1 y1 x2 y2)))
+  ([canref pct x1 y1 x2 y2]
+   (let [pct   (* 0.1 pct)
+         xdiff (* 0.1 (- x2 x1))
+         ydiff (* 0.1 (- y2 y1))
+         xnew  (+ x1 (* pct xdiff))
+         ynew  (+ y1 (* pct ydiff))
+         ]
+     (c2d/line canref x1 y1 xnew ynew)))
+  )
 
 (defn arc-pct [canref pct x y w h start end]
   (let [pct    (* 0.01 pct)
@@ -78,7 +84,7 @@
                   params (rest part)]]
       (case kind
         :line  (apply (partial line-pct canref pct) params)
-        :point (apply (partial c2d/point canref) params)
+        :point (do (c2d/set-stroke canref (* 3 stroke)) (apply (partial c2d/point canref) params) (c2d/set-stroke canref  stroke))
         :arc   (apply (partial arc-pct canref pct) params)
         ))
     (c2d/pop-matrix canref)
@@ -317,25 +323,39 @@
   (start false)
   (type @sigils)
   (keys @sigils)
-  (swap! sigils assoc :s1 testsigil)
   (identity testsigil)
   (identity @sigils)
   (swap! sigils assoc-in [:s1 0 :data :pct] 10)
+  (swap! sigils assoc :s1 testsigil)
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)
-      (s/append-glyph-at-line-end , 0 :zero)
+      (s/append-glyph-at-line-end , 0 :eleven)
       (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :one)
+      (s/append-glyph-at-line-end , 0 :eleven)
       (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :two)
+      (s/append-glyph-at-line-end , 0 :ten)
       (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :three)
+      (s/append-glyph-at-line-end , 0 :seven)
       (s/attach-child , 1 :zero)
-      (s/attach-child , 3 :zero)
-      (s/attach-child , 5 :zero)
+      (s/attach-child , 3 :nine)
+      (s/attach-child , 5 :eleven)
       (s/attach-child , 7 :zero)
     ) 0))
-  
+  (def gset [:zero :one :two :three :four :five :six :seven :eight :nine :ten :eleven])
+  (def testsigil 
+    (s/size-sigil (-> (s/append-glyph [] :join-line)
+      (s/append-glyph-at-line-end , 0 (rand-nth gset))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (rand-nth gset))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (rand-nth gset))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (rand-nth gset))
+      (s/attach-child , 1 (rand-nth gset))
+      (s/attach-child , 3 (rand-nth gset))
+      (s/attach-child , 5 (rand-nth gset))
+      (s/attach-child , 7 (rand-nth gset))
+    ) 0))
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)
       (s/append-glyph-at-line-end , 0 :two)
