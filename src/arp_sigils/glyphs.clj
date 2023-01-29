@@ -6,7 +6,7 @@
   (* 10 x))
 
 ;MS - minimum size
-(def MS 40)
+(def MS 80)
 (def -MS (- MS))
 
 (defn empty-glyph [name] {:name name })
@@ -402,48 +402,8 @@
               ]
      }))
 
-(defn size-ten [children]
-  (let [childbbs (map :bbox children)
-        chs     (mapv #(.getWidth %) childbbs)
-        cws     (mapv #(.getHeight %) childbbs)
-        newmaxw (apply max (conj cws MS))
-        newmaxh (apply max (conj chs MS))
-        myw     newmaxw
-        myh     (* 2 MS)
-        hmyw    (* 1/2 myw)
-        fmyw    (* 1/5 myw)
-        hmyh    (* 1/2 myh) 
-        fmyh    (* 1/5 myh) 
-        fMS     (* 1/5 MS)
-        inp     [(- hmyw) 0]
-        outp    [hmyw 0]
-        N       [0 fMS]
-        S       [0 (- fMS)]
-        NW      [(* -2 fmyw) (* 1 fMS)]
-        NE      [(* 2 fmyw) (* 1 fMS)]
-        SW      [(* -2 fmyw) (* -1 fMS)]
-        SE      [(* 2 fmyw) (* -1 fMS)]
-        coreN   [0 hmyh]
-        coreS   [0 (- hmyh)]
-        toth    (+ myh newmaxh)
-        ]
-    {:parts [[:line inp outp]
-             [:line NW N][:line NE N]
-             [:line SW S][:line SE S]
-             [:line N coreN]
-             [:line S coreS]
-             ]
-     :width myw
-     :in [(- hmyw) 0]
-     :out [hmyw 0]
-     :bbox (c2d/crect-shape 0 0  myw toth)
-     :attach [
-              [0 (- hmyh) (fm/radians 270)]
-              [0 hmyh (fm/radians 90)]
-              ]
-     }))
 
-(defn size-eleven [children]
+(defn size-ten [children]
   (let [childbbs (map :bbox children)
         chs     (mapv #(.getWidth %) childbbs)
         cws     (mapv #(.getHeight %) childbbs)
@@ -474,10 +434,8 @@
         NE      [(* 1 fMS) (* -1 fMS)]
         NNE     [(* 1 fMS) (* -3 fMS)]
         NEE     [(* 3 fMS) (* -1 fMS)]
-        forkSW  [(* -2 fMS) (* 4 fMS)]
-        forkSE  [(* 2 fMS) (* 4 fMS)]
-        coreS   [0 hmyh]
-        coreN   [0 (- hmyh)]
+        coreN   [0 (* -6 fMS)]
+        coreS   [0 (* 6 fMS )]
         toth    (+ myh newmaxh)
         ]
     {:parts [[:line inp W]
@@ -485,22 +443,64 @@
              [:line NE NNE][:line NE NEE]
              [:line SW SSW][:line SW SWW]
              [:line SE SSE][:line SE SEE]
-             [:line N coreN][:line S coreS]
-             [:line forkSW forkSE]
+             [:line N coreN]
+             [:line S coreS]
+             ;[:line forkSW forkSE]
              [:line outp E]
-
              ]
      :width myw
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  myw toth)
      :attach [
-              [0 (- hmyh) (fm/radians 270)]
-              [0 hmyh (fm/radians 90)]
-              [0 hmyh (fm/radians 90)]
+              [0 (* -6 fMS) (fm/radians 270)]
+              [0 (* 6 fMS) (fm/radians 90)]
               ]
      }))
 
+(defn size-eleven [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     newmaxw
+        myh     (* 2 MS)
+        hmyw    (* 1/2 myw)
+        fmyw    (* 1/5 myw)
+        hmyh    (* 1/2 myh) 
+        fmyh    (* 1/5 myh) 
+        fMS     (* 1/5 MS)
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        S       [0 fMS]
+        N       [0 (- fMS)]
+        SW      [(* -2 fmyw) (* 1 fMS)]
+        SE      [(* 2 fmyw) (* 1 fMS)]
+        NW      [(* -2 fmyw) (* -1 fMS)]
+        NE      [(* 2 fmyw) (* -1 fMS)]
+        coreS   [0 hmyh]
+        coreNW  [(* -2 fmyw) (* -2 hmyh)]
+        coreNE  [(* 2 fmyw) (- hmyh)]
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [[:line inp outp]
+             [:line NW N][:line NE N]
+             [:line SW S][:line SE S]
+             [:line S coreS]
+             [:line NW coreNW]
+             [:line NE coreNE]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [(* 2 fmyw) (- hmyh) (fm/radians 270)]
+              [(* -2 fmyw) (* -2 hmyh) (fm/radians 270)]
+              [0 hmyh (fm/radians 90)]
+              ]
+     }))
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
