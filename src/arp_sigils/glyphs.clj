@@ -6,7 +6,7 @@
   (* 10 x))
 
 ;MS - minimum size
-(def MS 30)
+(def MS 80)
 (def -MS (- MS))
 
 (defn empty-glyph [name] {:name name })
@@ -121,23 +121,26 @@
 
 (defn size-one [children]
   (let [childbb (-> children first :bbox)
-        w       (if childbb (.getWidth childbb) 0)
-        h       (if childbb (.getHeight childbb) 0)
-        myw     20
-        myh     40
-        combyw  (max myw w)
-        combyh  (+ myh h)
+        h       (if childbb (.getWidth childbb) MS)
+        w       (if childbb (.getHeight childbb) MS)
+        myw     (max MS w)
+        myh     (* 2 w)
+        totw    (max myw w)
+        toth    (+ myh h)
         hmyw    (* 0.5 myw)
         hmyh    (* 0.5 myh)
+        center  [0 0]
+        coreN   [0 (- hmyh)]
         ]
-    {:parts [[:line (- hmyw) 0 0 0]
-             [:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]
-             [:line 0 0 hmyw 0]
+    {:parts [
+             [:arc 0 0  myw hmyh 0 fm/PI ]
+             [:point 0 0]
+             [:line center coreN]
              ]
-     :width combyw
+     :width totw
      :in [(- hmyw) 0]
      :out [hmyw 0]
-     :bbox (c2d/crect-shape 0 0  combyw combyh)
+     :bbox (c2d/crect-shape 0 0  totw toth)
      :attach [[0 (- hmyh) fm/-HALF_PI]] }))
 
 (defn size-two [children]
