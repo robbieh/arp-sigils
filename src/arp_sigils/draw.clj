@@ -65,12 +65,13 @@
      (c2d/line canref x1 y1 xnew ynew)))
   )
 
-(defn arc-pct [canref pct x y w h start end]
+(defn arc-pct [canref pct x y w h start extent]
   (let [pct    (* 0.01 pct)
-        diff   (- end start)
-        newend (+ start (* pct diff))
+        ;diff   (- end start)
+        ;newend (+ 0 (* pct diff))
+        newextent (* pct extent)
         ]
-    (c2d/arc canref x y w h start newend)))
+    (c2d/arc canref x y w h start newextent)))
 
 (defn draw-glyph-pct [canref glyph]
   (let [{:keys [parts width in out bbox]} glyph
@@ -329,15 +330,15 @@
   (swap! sigils assoc :s1 testsigil)
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)
-      (s/append-glyph-at-line-end , 0 :three)
+      (s/append-glyph-at-line-end , 0 :two)
       (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :eleven)
+      (s/append-glyph-at-line-end , 0 :two)
       (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :ten)
+      (s/append-glyph-at-line-end , 0 :two)
       (s/append-glyph-at-line-end , 0 :join-line)
       (s/append-glyph-at-line-end , 0 :seven)
-      (s/attach-child , 1 :three)
-      (s/attach-child , 3 :nine)
+      (s/attach-child , 1 :zero)
+      (s/attach-child , 3 :two)
       (s/attach-child , 5 :eleven)
       (s/attach-child , 7 :zero)
     ) 0))

@@ -112,7 +112,7 @@
         h       (if childbb (.getHeight childbb) MS)
         myw     (max w h)
         hmyw    (* 0.5 myw)]
-    {:parts [[:arc 0 0 myw myw 0.0 (* 2.0 Math/PI)]]
+    {:parts [[:arc 0 0 myw myw (fm/radians 180.0) (fm/radians 360)]]
      :width myw
      :in [(- hmyw) 0]
      :out [hmyw 0]
@@ -145,21 +145,31 @@
 
 (defn size-two [children]
   (let [childbbs (map :bbox children)
-        cws      (mapv #(.getWidth %) childbbs)
-        chs      (mapv #(.getHeight %) childbbs)
+        chs      (mapv #(.getWidth %) childbbs)
+        cws      (mapv #(.getHeight %) childbbs)
         myw     MS
-        myh     (* 2 MS)
+        myh     MS
         combyw  (apply max (conj cws myw))
         combyh  (apply + (conj chs myh))
-        hmyw    (* 0.5 myw)
-        hmyh    (* 0.5 myh)
-        qmyw    (* 0.25 myw)
-        qmyh    (* 0.25 myh)
+        hmyw    (* 1/2 myw)
+        hmyh    (* 1/2 myh)
+        fmyw    (* 1/5 myw)
+        fmyh    (* 1/5 myh)
+        center  [0 0]
+        coreN   [0 (- hmyh)]
+        coreS   [0  hmyh]
         ]
-    {:parts [[:line (- hmyw) 0 0 0]
-             [:line 0 (- hmyh) 0 hmyh] [:point 0 (- hmyh)]
-             [:point [qmyw qmyh]] [:point [(- qmyw) (- qmyh)]]
-             [:line 0 0 hmyw 0]
+    {:parts [[:line (- hmyw) 0 (* -2 fmyw) 0]
+             [:line center coreN]
+             [:line center coreS]
+             ;[:line 0 (- hmyh) 0 hmyh] 
+             [:arc (- hmyw) 0 (* 3 fmyw) (* 3 fmyh)
+              (fm/radians 90) (fm/radians 180)]
+             [:arc hmyw 0 (* 3 fmyw) (* 3 fmyh)
+              (fm/radians 90) (- (fm/radians 180))]
+             [:point 0 (- hmyh)]
+             [:point [fmyw fmyh]] [:point [(- fmyw) (- fmyh)]]
+             ;[:line 0 0 hmyw 0]
              ]
      :width combyw
      :in [(- hmyw) 0]
