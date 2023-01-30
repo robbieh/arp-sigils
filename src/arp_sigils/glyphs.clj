@@ -6,7 +6,7 @@
   (* 10 x))
 
 ;MS - minimum size
-(def MS 80)
+(def MS 30)
 (def -MS (- MS))
 
 (defn empty-glyph [name] {:name name })
@@ -196,8 +196,8 @@
 
 (defn size-three [children]
   (let [childbbs (map :bbox children)
-        chs     (mapv #(.getWidth %) childbbs)
-        cws     (mapv #(.getHeight %) childbbs)
+        cws     (mapv #(.getWidth %) childbbs)
+        chs     (mapv #(.getHeight %) childbbs)
         thetas   [(fm/radians 315) (fm/radians 225) (fm/radians 90)]
         newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
         newws    (mapv first newbb)
@@ -216,8 +216,8 @@
         W       [(- hmyw) 0]
         E       [hmyw 0]
         center  [0 0]
-        toth    (+ myh (first newws) (last newws))
-        totw    (+ myw (first newws) (second newws))
+        toth    (+ myh (* 2 newmaxw))
+        totw    (+ myw (* 2 newmaxh))
         ]
     {:parts [[:line inp center]
              [:line center NW][:line center NE]
@@ -542,6 +542,51 @@
               [0 hmyh (fm/radians 90)]
               ]
      }))
+
+(defn size-twelve [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     newmaxw
+        myh     (* 2 MS)
+        hmyw    (* 1/2 myw)
+        fmyw    (* 1/5 myw)
+        hmyh    (* 1/2 myh) 
+        fmyh    (* 1/5 myh) 
+        fMS     (* 1/5 MS)
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        S       [0 fMS]
+        N       [0 (- fMS)]
+        SW      [(* -2 fmyw) (* 1 fMS)]
+        SE      [(* 2 fmyw) (* 1 fMS)]
+        NW      [(* -2 fmyw) (* -1 fMS)]
+        NE      [(* 2 fmyw) (* -1 fMS)]
+        coreS   [0 hmyh]
+        coreNW  [(* -2 fmyw) (* -2 hmyh)]
+        coreNE  [(* 2 fmyw) (- hmyh)]
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [[:line inp outp]
+             [:line NW N][:line NE N]
+             [:line SW S][:line SE S]
+             [:line S coreS]
+             [:line NW coreNW]
+             [:line NE coreNE]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [(* 2 fmyw) (- hmyh) (fm/radians 270)]
+              [(* -2 fmyw) (* -2 hmyh) (fm/radians 270)]
+              [0 hmyh (fm/radians 90)]
+              ]
+     }))
+
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
@@ -557,81 +602,3 @@
    :ten       size-ten
    :eleven    size-eleven
    })
-;(defn join-line [sigil node]
-;  (let [me (get sigil node)
-;        outglyph (:outglyph me)]
-;    (if (empty? outglyph)
-;      (assoc sigil node (merge me join-line-map))
-;      (let [child     (get sigil outglyph)
-;            childfunc (:func child)
-;            newsigil  (childfunc child)] 
-;        (assoc newsigil node (merge me join-line-map)))) ))
-
-
-;(defn zero []
-;  (let [me (get sigil node)
-;        outglyph (:outglyph me)
-;        subglyphs (:subglyphs me)
-;        ]
-;
-;    )
-;  {:name :zero
-;   :parts [[:arc 0 0 20 20 0.0 (* 2.0 Math/PI)]]
-;   :subglyphs nil
-;   :outglyph nil
-;   :out [10 0]
-;   :width 20
-;   :bbox (c2d/rect-shape -10 -10 10 10)
-;   :in [-10 0]
-;   :attach [[0 0 0.0]]
-;   :sizefn (fn [self bboxes] 
-;             (let [bbox    (-> bboxes first :bbox)
-;                   [xs ys] (rect2d->corners bbox)]
-;               (merge self {:bbox bbox
-;                            :parts [[:arc 0 0 xs ys 0.0 fm/TWO_PI]]})))})
-
-;(defn one []
-;  {:name :one
-;   :parts  [[:line 0 -20 0 20] [:point 0 -20]]
-;   :width 20
-;   :bbox (c2d/rect-shape -10 -10 10 10)
-;   :in [-10 0]
-;   :out [10 0]
-;   :attach [[0 20 fm/HALF_PI]]
-;   :sizefn (fn [self bboxes]
-;             (let [bbox    (-> bboxes first :bbox )
-;                   [xs ys] (bbox->wh bbox)]
-;               (merge self {:bbox bbox
-;                            :parts [[:arc 0 0 xs ys 0.0 fm/TWO_PI]]})
-;
-;               )
-;             )
-;  })
-;
-;(defn two []
-;  {:name :two
-;   :parts  [[:line 0 -20 0 20] [:point 0 -20] [:point 0 20]]
-;   :out [10 0]
-;   :width 20
-;   :bbox (c2d/rect-shape -10 -10 10 10)
-;   :in [-10 0]
-;   :attach [[0 20 fm/HALF_PI] [0 -20 fm/-HALF_PI]]
-;   :sizefn (fn [bboxes])
-;  })
-;
-;(defn three []
-;  {:name :three
-;   :parts [[:line 0 0 0 20] 
-;           [:line 0 0 -10 -20] [:point -10 -20]
-;           [:line 0 0 10 -20] [:point 10 -20]
-;           ]
-;   :width  20
-;   :out [10 0]
-;   :bbox (c2d/rect-shape -10 -10 10 10)
-;   :in [-10 0]
-;   :attach [[-10 -20 (* 1.3 fm/PI )]
-;            [10 -20 (* 0.3 fm/-PI)]
-;            ]
-;   :sizefn (fn [boxes])
-;   })
-;
