@@ -210,7 +210,6 @@
 (defn size-three [children]
   (let [childbbs (map :bbox children)
         cws     (mapv #(.getWidth %) childbbs)
-        _ (println cws)
         chs     (mapv #(.getHeight %) childbbs)
         thetas  [(fm/radians 120) (fm/radians 90) (fm/radians 60)]
         newbb   (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
@@ -218,9 +217,7 @@
         newhs   (mapv second newbb)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
-        _ (println newws)
         totw    (reduce + newhs) 
-        _ (println totw)
         myw     (max (* 2/3 totw) MS)
         myh     myw
         toth    (+ myh (* 2 newmaxh))
@@ -248,7 +245,8 @@
               [(* 2 smyw) r2 (fm/radians 60)]
               ]
      }))
-(defn size-four [children]
+
+(defn old-size-four [children]
   (let [childbbs (map :bbox children)
         chs      (mapv #(.getWidth %) childbbs)
         cws      (mapv #(.getHeight %) childbbs)
@@ -296,7 +294,45 @@
               [hmyw hmyh (fm/radians 90)]
               ] }))
 
-;(size-five [(size-zero nil)])
+(defn size-four [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     (* 2 newmaxw)
+        myh     (* 1.5 newmaxh)
+        hmyw    (* 0.5 myw)
+        smyw    (* 1/6 myw) 
+        tmyh    (* 1/3 myh) 
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        tip1    [(- (* 2 smyw)) (- tmyh)]
+        tip2    [0 tmyh]
+        tip3    [(* 2 smyw) (- tmyh)]
+        invtip  [0 (- tmyh)]
+        NW      [(* -3 smyw) (* -2 tmyh)]
+        NE      [(* 3 smyw) (* -2 tmyh)]
+        SW      [(* -2 smyw) (* 2 tmyh)]
+        SE      [(* 2 smyw) (* 2 tmyh)]
+        ]
+    {:parts [[:line inp tip1][:line tip1 tip2][:line tip2 tip3][:line tip3 outp]
+             [:line tip1 NW][:line tip3 NE]
+             [:line invtip SW] [:line invtip SE]
+             [:point 0 0]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw myh)
+     :attach [
+              [(first NW) (* -2 tmyh) (fm/radians 270)]
+              [(first NE) (* -2 tmyh) (fm/radians 270)]
+              [(first SW) (* 2 tmyh) (fm/radians 90)]
+              [(first SE) (* 2 tmyh) (fm/radians 90)]
+              ]
+     }))
+
 (defn size-five [children]
   (let [childbbs (map :bbox children)
         chs     (mapv #(.getWidth %) childbbs)
