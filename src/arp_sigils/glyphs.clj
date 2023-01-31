@@ -169,7 +169,7 @@
               (fm/radians 90) (- (fm/radians 180))]
              [:point 0 (- hmyh)]
              [:point [fmyw fmyh]] [:point [(- fmyw) (- fmyh)]]
-             ;[:line 0 0 hmyw 0]
+             [:line (* 2 fmyw) 0 hmyw 0 ]
              ]
      :width combyw
      :in [(- hmyw) 0]
@@ -431,10 +431,10 @@
         horzNE  [qmyw (- qmyh)]
         horzSW  [(- qmyw) qmyh]
         horzSE  [qmyw qmyh]
-        shortN  [(- qmyw) (* -5 emyh)]
-        shortS  [qmyw (* 5 emyh)]
-        longN   [qmyw (* -7 emyh)]
-        longS   [(- qmyw) (* 7 emyh)]
+        shortN  [(- qmyw) (* -3 emyh)]
+        shortS  [qmyw (* 3 emyh)]
+        longN   [qmyw (* -5 emyh)]
+        longS   [(- qmyw) (* 5 emyh)]
         toth    (+ myh (* 2 newmaxh))
         ]
     {:parts [
