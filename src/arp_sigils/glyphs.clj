@@ -6,7 +6,7 @@
   (* 10 x))
 
 ;MS - minimum size
-(def MS 30)
+(def MS 60)
 (def -MS (- MS))
 
 (defn empty-glyph [name] {:name name })
@@ -593,38 +593,36 @@
               ]
      }))
 
+(defn divide-line 
+  ([p1 p2 divisions]
+   (let [[x1 y1] p1
+         [x2 y2] p2]
+     (divide-line x1 y1 x2 y2 divisions)))
+  ([x1 y1 x2 y2 divisions]
+   (println (map #( / % divisions) (range 1 divisions)))
+   (let [r     (map #(double ( / % divisions)) (range 1 divisions))
+         xdiff (- x2 x1)
+         ydiff (- y2 y1)
+         xs (map #(* % xdiff) r)
+         ys (map #(* % ydiff) r) ]
+     (mapv vector xs ys)
+    ;[r xdiff ydiff xs ys]
+     
+     )))
+
 (defn size-twelve [children]
   (let [childbbs (map :bbox children)
         chs     (mapv #(.getWidth %) childbbs)
         cws     (mapv #(.getHeight %) childbbs)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
-        myw     newmaxw
-        myh     (* 2 MS)
+        myw     (* 1.5 newmaxw)
+        myh     (* 2 newmaxh)
         hmyw    (* 1/2 myw)
+        hmyh    (* 1/2 myw)
         fmyw    (* 1/5 myw)
-        hmyh    (* 1/2 myh) 
-        fmyh    (* 1/5 myh) 
-        fMS     (* 1/5 MS)
-        inp     [(- hmyw) 0]
-        outp    [hmyw 0]
-        S       [0 fMS]
-        N       [0 (- fMS)]
-        SW      [(* -2 fmyw) (* 1 fMS)]
-        SE      [(* 2 fmyw) (* 1 fMS)]
-        NW      [(* -2 fmyw) (* -1 fMS)]
-        NE      [(* 2 fmyw) (* -1 fMS)]
-        coreS   [0 hmyh]
-        coreNW  [(* -2 fmyw) (* -2 hmyh)]
-        coreNE  [(* 2 fmyw) (- hmyh)]
-        toth    (+ myh newmaxh)
         ]
-    {:parts [[:line inp outp]
-             [:line NW N][:line NE N]
-             [:line SW S][:line SE S]
-             [:line S coreS]
-             [:line NW coreNW]
-             [:line NE coreNE]
+    {:parts [
              ]
      :width myw
      :in [(- hmyw) 0]
@@ -651,4 +649,5 @@
    :nine      size-nine
    :ten       size-ten
    :eleven    size-eleven
+   :twelve    size-twelve
    })
