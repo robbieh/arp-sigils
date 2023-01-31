@@ -6,7 +6,7 @@
   (* 10 x))
 
 ;MS - minimum size
-(def MS 80)
+(def MS 30)
 (def -MS (- MS))
 
 (defn empty-glyph [name] {:name name })
@@ -147,8 +147,8 @@
   (let [childbbs (map :bbox children)
         chs      (mapv #(.getWidth %) childbbs)
         cws      (mapv #(.getHeight %) childbbs)
-        myw     MS
-        myh     MS
+        myw     (* 2 MS)
+        myh     (* 2 MS)
         combyw  (apply max (conj cws myw))
         combyh  (apply + (conj chs myh))
         hmyw    (* 1/2 myw)
@@ -210,42 +210,42 @@
 (defn size-three [children]
   (let [childbbs (map :bbox children)
         cws     (mapv #(.getWidth %) childbbs)
+        _ (println cws)
         chs     (mapv #(.getHeight %) childbbs)
-        thetas   [(fm/radians 315) (fm/radians 225) (fm/radians 90)]
-        newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
-        newws    (mapv first newbb)
-        newhs    (mapv second newbb)
+        thetas  [(fm/radians 120) (fm/radians 90) (fm/radians 60)]
+        newbb   (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
+        newws   (mapv first newbb)
+        newhs   (mapv second newbb)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
-        myw     MS
-        myh     MS
+        _ (println newws)
+        totw    (reduce + newhs) 
+        _ (println totw)
+        myw     (max (* 2/3 totw) MS)
+        myh     myw
+        toth    (+ myh (* 2 newmaxh))
         hmyw    (* 1/2 myw)
         hmyh    (* 1/2 myh) 
+        smyw    (* 1/6 myw)  
         inp     [(- hmyw) 0]
         outp    [hmyw 0]
-        NW      [(- hmyw) (- hmyh)]
-        NE      [hmyw (- hmyh)]
-        S       [0 hmyh]
-        W       [(- hmyw) 0]
-        E       [hmyw 0]
         center  [0 0]
-        toth    (+ myh (* 2 newmaxw))
-        totw    (+ myw (* 2 newmaxh))
+        r1      (* hmyh (fm/sin (fm/radians 120)))
+        r2      (* hmyh (fm/sin (fm/radians 60)))
         ]
-    {:parts [[:line inp center]
-             [:line center NW][:line center NE]
-             [:line center S]
-             [:line outp center]
-             [:point 0 hmyh]
+    {:parts [[:arc 0 0 myw myh (fm/radians -30) (fm/radians 300)]
+             [:arc 0 0 hmyw hmyh (fm/radians -30) (fm/radians 300)]
+             [:point 0 0]
+             [:line center outp]
              ]
      :width totw
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  totw toth)
      :attach [
-              [(- hmyw) (- hmyh) (fm/radians 225)]
-              [hmyw (- hmyh) (fm/radians 315)]
+              [(* -2 smyw) r1 (fm/radians 120)]
               [0 hmyh (fm/radians 90)]
+              [(* 2 smyw) r2 (fm/radians 60)]
               ]
      }))
 (defn size-four [children]
