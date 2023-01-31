@@ -207,6 +207,7 @@
               [0 hmyh (fm/radians 90)]
               ] }))
 
+(size-three [])
 (defn size-three [children]
   (let [childbbs (map :bbox children)
         cws     (mapv #(.getWidth %) childbbs)
@@ -215,12 +216,12 @@
         newbb   (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
         newws   (mapv first newbb)
         newhs   (mapv second newbb)
-        newmaxw (apply max (conj cws MS))
-        newmaxh (apply max (conj chs MS))
-        totw    (reduce + newhs) 
+        newmaxw (apply max (conj cws 0))
+        newmaxh (apply max (conj chs 0))
+        totw    (max (reduce + newhs) MS)
         myw     (max (* 2/3 totw) MS)
         myh     myw
-        toth    (+ myh (* 2 newmaxh))
+        toth    (+ myh  newmaxh)
         hmyw    (* 1/2 myw)
         hmyh    (* 1/2 myh) 
         smyw    (* 1/6 myw)  
@@ -300,7 +301,7 @@
         cws     (mapv #(.getHeight %) childbbs)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
-        myw     (* 2 newmaxw)
+        myw     (* 1.5 newmaxw)
         myh     (* 1.5 newmaxh)
         hmyw    (* 0.5 myw)
         smyw    (* 1/6 myw) 
@@ -308,9 +309,9 @@
         inp     [(- hmyw) 0]
         outp    [hmyw 0]
         tip1    [(- (* 2 smyw)) (- tmyh)]
-        tip2    [0 tmyh]
+        tip2    [0 (* 2 tmyh)]
         tip3    [(* 2 smyw) (- tmyh)]
-        invtip  [0 (- tmyh)]
+        invtip  [0 0]
         NW      [(* -3 smyw) (* -2 tmyh)]
         NE      [(* 3 smyw) (* -2 tmyh)]
         SW      [(* -2 smyw) (* 2 tmyh)]
