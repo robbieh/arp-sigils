@@ -770,40 +770,53 @@
 
 (defn size-fifteen [children]
   (let [childbbs (map :bbox children)
-        chs     (mapv #(.getWidth %) childbbs)
-        cws     (mapv #(.getHeight %) childbbs)
+        cws     (mapv #(.getWidth %) childbbs)
+        chs     (mapv #(.getHeight %) childbbs)
+        thetas  [(fm/radians 135) (fm/radians 45) (fm/radians 225)]
+        newbb    (mapv #(get-rotated-bounds %1 %2 %3 ) cws chs thetas)
+        newws    (mapv first newbb)
+        newhs    (mapv second newbb)
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
-        myw     (* 2 newmaxw)
-        myh     (* 2 newmaxh)
+        myw     (* 2 (max newmaxw newmaxh))
+        myh     myw
         hmyw    (* 1/2 myw)
         hmyh    (* 1/2 myh)
         smyw    (* 1/6 myw)
         smyh    (* 1/6 myh)
         inp     [(- hmyw) 0]
         outp    [hmyw 0]
+        N       [0 (- hmyh)]
+        S       [0 (+ hmyh)]
+        W       [(- hmyw) 0]
+        E       [(+ hmyw) 0]
+        [midNW] (divide-line N W 2)
+        [midNE] (divide-line N E 2)
+        [midSW] (divide-line S W 2)
+        [midSE] (divide-line S E 2)
+        [d1 d2] (divide-line [0 0] midSE 3)
+
+
         NW      [(- hmyw) (* -1 smyh)]
         NE      [hmyw (* -2 smyh)]
         tip     [(* 0 smyw) (* -3 smyh)]
-        [midNW] (divide-line NW tip 2)
-        [midNE] (divide-line NE tip 2)
         SW      [(- hmyw) hmyh]
         SE      [hmyw hmyh]
         toth    (+ myh newmaxh)
         ]
     {:parts [
-             [:line tip NW][:line tip NE]
-             [:line NW SW][:line NE SE]
-             [:line SW SE]
+             [:line N W][:line W S][:line S E][:line E N]
+             [:point (first d1) (second d1)]
+             [:point (first d2) (second d2)]
              ]
      :width myw
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  myw toth)
      :attach [
-              [(first midNW) (second midNW) (fm/radians 245)]
-              [(first midNE) (second midNE) (fm/radians 280)]
-              [(first tip) (second tip) (fm/radians 270)]
+              [(first midNW) (second midNW) (fm/radians 45)]
+              [(first midNE) (second midNE) (fm/radians 135)]
+              [(first midSW) (second midSW) (fm/radians 315)]
               ]
      }))
 
