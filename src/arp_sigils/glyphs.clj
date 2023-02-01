@@ -141,10 +141,11 @@
         myh     (* 2 w)
         totw    (max myw w)
         toth    (+ myh h)
-        hmyw    (* 0.5 myw)
-        hmyh    (* 0.5 myh)
+        hmyw    (* 1/2 myw)
+        hmyh    (* 1/2 myh)
+        tmyh    (* 1/3 myh)
         center  [0 0]
-        coreN   [0 (- hmyh)]
+        coreN   [0 (- tmyh)]
         ]
     {:parts [
              [:arc 0 0  myw hmyh 0 fm/PI ]
@@ -155,7 +156,7 @@
      :in [(- hmyw) 0]
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  totw toth)
-     :attach [[0 (- hmyh) fm/-HALF_PI]] }))
+     :attach [[0 (- tmyh) fm/-HALF_PI]] }))
 
 (defn size-two [children]
   (let [childbbs (map :bbox children)
@@ -163,8 +164,8 @@
         cws      (mapv #(.getHeight %) childbbs)
         myw     (* 1 MS)
         myh     (* 1 MS)
-        combyw  (apply max (conj cws myw))
-        combyh  (apply + (conj chs myh))
+        totw    (apply max (conj cws myw))
+        toth    (+ myh (apply max (conj chs myh)))
         hmyw    (* 1/2 myw)
         hmyh    (* 1/2 myh)
         fmyw    (* 1/5 myw)
@@ -185,10 +186,10 @@
              [:point [fmyw fmyh]] [:point [(- fmyw) (- fmyh)]]
              [:line (* 2 fmyw) 0 hmyw 0 ]
              ]
-     :width combyw
+     :width totw
      :in [(- hmyw) 0]
      :out [hmyw 0]
-     :bbox (c2d/crect-shape 0 0  combyw combyh)
+     :bbox (c2d/crect-shape 0 0  totw toth)
      :attach [[0 (- hmyh) fm/-HALF_PI] [0 hmyh fm/HALF_PI]] }))    
 
 (defn old-size-three [children]
@@ -746,8 +747,7 @@
         SW      [(* 3 smyw) (* 3 emyh)]
         SE      [(* 1 smyw) (* 3 emyh)]
         tailE   [(* 2 smyw) (* -2 emyh)]
-
-
+        totw    (+ myw (* 2 newmaxw))
         toth    (+ myh newmaxh)
         ]
     {:parts [[:line inp incon] [:line outcon outp]
@@ -758,10 +758,10 @@
              [:arc (* -1 smyw) 0 (* 2 smyw) (* 2 smyh) (fm/radians 0) (fm/radians 180)]
              [:arc (* 1 smyw) 0 (* 2 smyw) (* 2 smyh) (fm/radians 180) (fm/radians 180)]
              ]
-     :width myw
+     :width totw
      :in [(- hmyw) 0]
      :out [hmyw 0]
-     :bbox (c2d/crect-shape 0 0  myw toth)
+     :bbox (c2d/crect-shape 0 0  totw toth)
      :attach [
               [(first N) (- hmyh) (fm/radians 270)]
               [(first S) hmyh (fm/radians 90)]
