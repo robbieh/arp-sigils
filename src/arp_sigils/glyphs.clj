@@ -374,11 +374,18 @@
         myh     (* 1.5 newmaxh)
         hmyw    (* 0.5 myw)
         tmyh    (* 1/3 myh) 
+        smyh    (* 1/6 myh) 
         inp     [(- hmyw) 0]
         outp    [hmyw 0]
         mp      [0 tmyh]
+        mpN     [0 0]
+        inN     [(- hmyw) (* -2 smyh)]
+        outN    [(+ hmyw) (* -2 smyh)]
         ]
-    {:parts [[:line inp mp][:line mp outp]]
+    {:parts [[:line inp mp][:line outp mp]
+             [:line inN mpN][:line outN mpN]
+             [:point 0 (* -2 smyh)]
+             ]
      :width myw
      :in [(- hmyw) 0]
      :out [hmyw 0]
@@ -403,7 +410,9 @@
         tip1    [(- hhmyw) (- tmyh)]
         tip2    [hhmyw (- tmyh)]
         ]
-    {:parts [[:line inp tip1][:line tip1 mp][:line mp tip2][:line tip2 outp]]
+    {:parts [[:line inp tip1][:line tip1 mp][:line mp tip2][:line tip2 outp]
+             [:point (first tip2) 0]
+             ]
      :width myw
      :in [(- hmyw) 0]
      :out [hmyw 0]
@@ -603,7 +612,7 @@
         coreS   [0 hmyh]
         coreNW  [(* -2 fmyw) (* -2 fmyh)]
         coreNE  [(* 2 fmyw) (- fmyh)]
-        toth    (+ myh newmaxh)
+        toth    (+ MS newmaxh)
         ]
     {:parts [[:line inp outp]
              [:line NW N][:line NE N]
@@ -786,8 +795,6 @@
              [:line tip NW][:line tip NE]
              [:line NW SW][:line NE SE]
              [:line SW SE]
-             ;[:arc (* -2 smyw) (* -3 smyh) (* 2 smyh) (* 2 smyh) (fm/radians 45) (fm/radians 135)]
-            
              ]
      :width myw
      :in [(- hmyw) 0]
