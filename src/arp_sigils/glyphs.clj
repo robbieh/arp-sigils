@@ -601,8 +601,8 @@
         NW      [(* -2 fmyw) (* -1 fMS)]
         NE      [(* 2 fmyw) (* -1 fMS)]
         coreS   [0 hmyh]
-        coreNW  [(* -2 fmyw) (* -2 hmyh)]
-        coreNE  [(* 2 fmyw) (- hmyh)]
+        coreNW  [(* -2 fmyw) (* -2 fmyh)]
+        coreNE  [(* 2 fmyw) (- fmyh)]
         toth    (+ myh newmaxh)
         ]
     {:parts [[:line inp outp]
@@ -617,8 +617,8 @@
      :out [hmyw 0]
      :bbox (c2d/crect-shape 0 0  myw toth)
      :attach [
-              [(* 2 fmyw) (- hmyh) (fm/radians 270)]
-              [(* -2 fmyw) (* -2 hmyh) (fm/radians 270)]
+              [(* 2 fmyw) (- fmyh) (fm/radians 270)]
+              [(* -2 fmyw) (* -2 fmyh) (fm/radians 270)]
               [0 hmyh (fm/radians 90)]
               ]
      }))
