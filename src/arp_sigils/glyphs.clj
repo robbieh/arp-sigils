@@ -111,6 +111,23 @@
    :fifteen 3
    })
 
+(def char-glyph-map
+  {"0" :zero
+   "1" :one
+   "2" :two
+   "3" :three
+   "4" :four
+   "5" :five
+   "6" :six
+   "7" :seven
+   "8" :eight
+   "9" :nine
+   "a" :ten
+   "b" :eleven
+   "c" :twelve
+   "d" :thirteen
+   "e" :fourteen
+   "f" :fifteen})
 
 (defn size-join-line [_]
   {:parts [[:line (* -1/2 MS) 0 (* 1/2 MS) 0]]
@@ -222,7 +239,6 @@
               [0 hmyh (fm/radians 90)]
               ] }))
 
-(size-three [])
 (defn size-three [children]
   (let [childbbs (map :bbox children)
         cws     (mapv #(.getWidth %) childbbs)
