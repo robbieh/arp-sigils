@@ -6,7 +6,7 @@
   (* 10 x))
 
 ;MS - minimum size
-(def MS 60)
+(def MS 40)
 (def -MS (- MS))
 
 (defn empty-glyph [name] {:name name })
@@ -77,6 +77,20 @@
     (reduce #(.createUnion %1 %2) ,)
     rect2d->corners))
 
+(defn divide-line 
+  ([p1 p2 divisions]
+   (let [[x1 y1] p1
+         [x2 y2] p2]
+     (divide-line x1 y1 x2 y2 divisions)))
+  ([x1 y1 x2 y2 divisions]
+   (let [r     (map #(double ( / % divisions)) (range 1 divisions))
+         xdiff (- x2 x1)
+         ydiff (- y2 y1)
+         xs (map #(- x2 (* % xdiff)) r)
+         ys (map #(- y2 (* % ydiff)) r) ]
+     (mapv vector xs ys))))
+
+
 (def child-count-map 
   {:join-line 0
    :zero 1
@@ -99,11 +113,11 @@
 
 
 (defn size-join-line [_]
-  {:parts [[:line -MS 0 MS 0]]
-   :width (* 2 MS)
-   :in [-MS 0]
-   :out [MS 0]
-   :bbox (c2d/rect-shape -MS -MS MS MS)
+  {:parts [[:line (* -1/2 MS) 0 (* 1/2 MS) 0]]
+   :width (* 1 MS)
+   :in [(* -1/2 MS)0]
+   :out [(* 1/2 MS)0]
+   :bbox (c2d/rect-shape (* -1/2 MS)(* -1/2 MS)(* 1/2 MS)(* 1/2 MS))
    })
 
 (defn size-zero [children]
@@ -302,35 +316,51 @@
         newmaxw (apply max (conj cws MS))
         newmaxh (apply max (conj chs MS))
         myw     (* 1.5 newmaxw)
-        myh     (* 1.5 newmaxh)
-        hmyw    (* 0.5 myw)
+        myh     (* 2 newmaxh)
+        hmyh    (* 1/2 myh)
+        tmyh    (* 1/3 myh)
+        qmyh    (* 1/4 myh)
+        smyh    (* 1/6 myh) 
+        emyh    (* 1/8 myh) 
+        hmyw    (* 1/2 myw)
+        tmyw    (* 1/3 myw)
+        qmyw    (* 1/4 myw)
         smyw    (* 1/6 myw) 
-        tmyh    (* 1/3 myh) 
+        emyw    (* 1/8 myw) 
         inp     [(- hmyw) 0]
         outp    [hmyw 0]
-        tip1    [(- (* 2 smyw)) (- tmyh)]
-        tip2    [0 (* 2 tmyh)]
-        tip3    [(* 2 smyw) (- tmyh)]
-        invtip  [0 0]
-        NW      [(* -3 smyw) (* -2 tmyh)]
-        NE      [(* 3 smyw) (* -2 tmyh)]
-        SW      [(* -2 smyw) (* 2 tmyh)]
-        SE      [(* 2 smyw) (* 2 tmyh)]
+        N       [0 (- emyh)]
+        NW      [(- hmyw) (- tmyh)]
+        NE      [(+ hmyw) (- tmyh)]
+        [midNW] (divide-line N NW 2)
+        [midNE] (divide-line N NE 2)
+        S       [0 (+ emyh)]
+        SW      [(- hmyw) (+ tmyh)]
+        SE      [(+ hmyw) (+ tmyh)]
+        cN      [0 (- emyh)]
+        cS      [0 (+ emyh)]
+        cW      [(- emyh) 0]
+        cE      [(+ emyh) 0]
+        [midSW] (divide-line S SW 2)
+        [midSE] (divide-line S SE 2)
+        totw    myw
+        toth    myh
         ]
-    {:parts [[:line inp tip1][:line tip1 tip2][:line tip2 tip3][:line tip3 outp]
-             [:line tip1 NW][:line tip3 NE]
-             [:line invtip SW] [:line invtip SE]
-             [:point 0 0]
+    {:parts [[:line inp cW][:line outp cE]
+             [:line N NW][:line N NE][:line S SW][:line S SE]
+             [:line cW cN][:line cN cS][:line cS cE]
+             ;[:point (- qmyw) 0]
+             ;[:point (- hmyw) 0]
              ]
-     :width myw
+     :width totw
      :in [(- hmyw) 0]
      :out [hmyw 0]
-     :bbox (c2d/crect-shape 0 0  myw myh)
+     :bbox (c2d/crect-shape 0 0  totw toth)
      :attach [
-              [(first NW) (* -2 tmyh) (fm/radians 270)]
-              [(first NE) (* -2 tmyh) (fm/radians 270)]
-              [(first SW) (* 2 tmyh) (fm/radians 90)]
-              [(first SE) (* 2 tmyh) (fm/radians 90)]
+              [(first midNW) (second midNW) (fm/radians 290)]
+              [(first midNE) (second midNE) (fm/radians 250)]
+              [(first midSW) (second midSW) (fm/radians 70)]
+              [(first midSE) (second midSE) (fm/radians 110)]
               ]
      }))
 
@@ -593,26 +623,13 @@
               ]
      }))
 
-(defn divide-line 
-  ([p1 p2 divisions]
-   (let [[x1 y1] p1
-         [x2 y2] p2]
-     (divide-line x1 y1 x2 y2 divisions)))
-  ([x1 y1 x2 y2 divisions]
-   (let [r     (map #(double ( / % divisions)) (range 1 divisions))
-         xdiff (- x2 x1)
-         ydiff (- y2 y1)
-         xs (map #(- x2 (* % xdiff)) r)
-         ys (map #(- y2 (* % ydiff)) r) ]
-     (mapv vector xs ys))))
-
 
 (defn size-twelve [children]
   (let [childbbs (map :bbox children)
         chs     (mapv #(.getWidth %) childbbs)
         cws     (mapv #(.getHeight %) childbbs)
-        newmaxw (apply max (conj cws MS))
-        newmaxh (apply max (conj chs MS))
+        newmaxw (apply max (conj cws (* 2 MS)))
+        newmaxh (apply max (conj chs (* 2 MS)))
         myw     (* 1 newmaxw)
         myh     (* 1 newmaxh)
         hmyw    (* 1/2 myw)
@@ -651,6 +668,138 @@
               ]
      }))
 
+(defn size-thirteen [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     (* 1 newmaxw)
+        myh     (* 1 newmaxh)
+        hmyw    (* 1/2 myw)
+        hmyh    (* 1/2 myw)
+        qmyw    (* 1/4 myw)
+        smyw    (* 1/6 myw)
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        NW      [(- smyw) (- hmyh)]
+        NE      [smyw (- hmyh)]
+        SW      [(- qmyw) hmyh]
+        SE      [qmyw hmyh]
+        [w1 w2 w3 w4] (divide-line NW SW 5)
+        [e1 e2 e3 e4] (divide-line NE SE 5)
+        [mW]      (divide-line NW SW 2)
+        [mE]      (divide-line NE SE 2)
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [[:line inp mW] [:line mE outp]
+             [:line NW NE][:line SE SW][:line NW SW][:line NE SE]
+             [:line w1 e1][:line w2 e2][:line w3 e3][:line w4 e4]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [0 (- hmyh) (fm/radians 270)]
+              ]
+     }))
+
+(defn size-fourteen [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     (max (* 1/2 newmaxw) (* 2 MS))
+        myh     (* 2 MS)
+        hmyw    (* 1/2 myw)
+        hmyh    (* 1/2 myh)
+        smyw    (* 1/6 myw)
+        emyw    (* 1/8 myw)
+        smyh    (* 1/6 myh)
+        emyh    (* 1/8 myh)
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        incon   [(* -2 smyw) 0]
+        outcon  [(* 2 smyw) 0]
+        N       [(* -2 smyw) (- hmyh)]
+        NW      [(* -3 smyw) (* -3 emyh)]
+        NE      [(* -1 smyw) (* -3 emyh)]
+        Ns      [(* -2 smyw) (* -3 emyh)]
+        NWs     [(* -3 smyw) (* -2 emyh)]
+        NEs     [(* -1 smyw) (* -2 emyh)]
+        Nss     [(* -2 smyw) (* -2 emyh)]
+        NWss    [(* -3 smyw) (* -1 emyh)]
+        NEss    [(* -1 smyw) (* -1 emyh)]
+        tailW   [(* -2 smyw) (* 2 emyh)]
+        S       [(* 2 smyw) hmyh]
+        SW      [(* 3 smyw) (* 3 emyh)]
+        SE      [(* 1 smyw) (* 3 emyh)]
+        tailE   [(* 2 smyw) (* -2 emyh)]
+
+
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [[:line inp incon] [:line outcon outp]
+             [:line N NW][:line N NE][:line N tailW]
+             [:line Ns NWs][:line Ns NEs]
+             [:line Nss NWss][:line Nss NEss]
+             [:line S SW][:line S SE][:line S tailE]
+             [:arc (* -1 smyw) 0 (* 2 smyw) (* 2 smyh) (fm/radians 0) (fm/radians 180)]
+             [:arc (* 1 smyw) 0 (* 2 smyw) (* 2 smyh) (fm/radians 180) (fm/radians 180)]
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [(first N) (- hmyh) (fm/radians 270)]
+              [(first S) hmyh (fm/radians 90)]
+              ]
+     }))
+
+(defn size-fifteen [children]
+  (let [childbbs (map :bbox children)
+        chs     (mapv #(.getWidth %) childbbs)
+        cws     (mapv #(.getHeight %) childbbs)
+        newmaxw (apply max (conj cws MS))
+        newmaxh (apply max (conj chs MS))
+        myw     (* 2 newmaxw)
+        myh     (* 2 newmaxh)
+        hmyw    (* 1/2 myw)
+        hmyh    (* 1/2 myh)
+        smyw    (* 1/6 myw)
+        smyh    (* 1/6 myh)
+        inp     [(- hmyw) 0]
+        outp    [hmyw 0]
+        NW      [(- hmyw) (* -1 smyh)]
+        NE      [hmyw (* -2 smyh)]
+        tip     [(* 0 smyw) (* -3 smyh)]
+        [midNW] (divide-line NW tip 2)
+        [midNE] (divide-line NE tip 2)
+        SW      [(- hmyw) hmyh]
+        SE      [hmyw hmyh]
+        toth    (+ myh newmaxh)
+        ]
+    {:parts [
+             [:line tip NW][:line tip NE]
+             [:line NW SW][:line NE SE]
+             [:line SW SE]
+             ;[:arc (* -2 smyw) (* -3 smyh) (* 2 smyh) (* 2 smyh) (fm/radians 45) (fm/radians 135)]
+            
+             ]
+     :width myw
+     :in [(- hmyw) 0]
+     :out [hmyw 0]
+     :bbox (c2d/crect-shape 0 0  myw toth)
+     :attach [
+              [(first midNW) (second midNW) (fm/radians 245)]
+              [(first midNE) (second midNE) (fm/radians 280)]
+              [(first tip) (second tip) (fm/radians 270)]
+              ]
+     }))
+
 (def size-function-map
   {:join-line size-join-line
    :zero      size-zero
@@ -666,4 +815,7 @@
    :ten       size-ten
    :eleven    size-eleven
    :twelve    size-twelve
+   :thirteen  size-thirteen
+   :fourteen  size-fourteen
+   :fifteen   size-fifteen
    })
