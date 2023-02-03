@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.3"]
                  [instaparse "1.4.12"]
                  [clojure2d "1.4.4"]
+                 [org.clojure/tools.cli "1.0.214"]
                  [generateme/fastmath "2.1.8" :exclusions [com.github.haifengl/smile-mkl org.bytedeco/openblas]]
                  ]
   :main ^:skip-aot arp-sigils.core

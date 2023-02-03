@@ -1,6 +1,7 @@
 (ns arp-sigils.draw
   (:require [arp-sigils.sigils :as s]
             [arp-sigils.glyphs :as g]
+            [arp-sigils.arp :as arp]
             [clojure2d.core :as c2d]
             [clojure2d.color :as color]
             [clojure2d.pixels :as pix]
@@ -9,48 +10,72 @@
 
 (def window)
 
-(def state (atom {:mode :sigil
-                  :addr "94:c6:91:16:48:49"
+;modes
+;one-sigil
+;passing-sigils
+;mandala
+(def state (atom {:mode :new
                   :exception nil
                   :exception-timeout 0
-                  :sigil nil
                   }))
 (def sigils (atom {}))
+(def sigilmeta (atom {}))
 (def errstate (atom {}))
-
+(def modes [:one-sigil :passing-sigils])
 (def stroke 3)
+(def palette )
+
+;(color/palette (color/gradient [:darkblue [0 50 0] :dark-green]) 100)
+;(nth pal (nth (:temp @fetch/forecast) x))
 
 (defn reset-state []
-  (reset! state {:mode :sigil
-                :addr "94:c6:91:16:48:49"
+  (reset! state {:mode :new
                 :exception nil
                 :exception-timeout 0}))
 
-(def canvas (c2d/canvas 1600 400))
+(defn now [] (System/currentTimeMillis))
 
-(defn negpoint [[x y]]
+;(def testsigil (mac->sigil (rand-nth @arp/macs)))
+(defn mac->sigil 
+  "Translates a MAC address string into a sigil"
+  [macstr]
+  (let [pairs (clojure.string/split macstr #":")
+        firsts (map (comp str first) pairs)
+        seconds (map (comp str second) pairs)
+        fg (mapv g/char-glyph-map firsts)
+        sg (mapv g/char-glyph-map seconds)
+        ]
+    (s/size-sigil (-> (s/append-glyph [] :join-line )
+      (s/append-glyph-at-line-end , 0 (nth fg 0))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (nth fg 1))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (nth fg 2))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (nth fg 3))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (nth fg 4))
+      (s/append-glyph-at-line-end , 0 :join-line)
+      (s/append-glyph-at-line-end , 0 (nth fg 5))
+      (s/attach-child , 1 (nth sg 0))
+      (s/attach-child , 3 (nth sg 1))
+      (s/attach-child , 5 (nth sg 2))
+      (s/attach-child , 7 (nth sg 3))
+      (s/attach-child , 9 (nth sg 4))
+      (s/attach-child , 11 (nth sg 5)))
+                    0)))
+
+(defn update-sigil-map []
+  (doseq [mac @arp/macs
+          :let [fullwidth (s/calc-length (get @sigils mac) 0)]]
+    (swap! sigils assoc mac (mac->sigil mac))
+    (swap! sigilmeta assoc mac {:fullwidth fullwidth})))
+
+(defn negpoint "return negative of x,y in a point" [[x y]]
   [(- x) (- y)])
 
-(defn draw-strokes [canref strokes]
-                   (doseq [part (:parts strokes)
-                         :let [kind   (first part)
-                               params (vec (rest part))
-                               ;_ (println kind params)
-                               ]] 
-                     (case kind
-                       :line  (apply (partial c2d/line canref) params)
-                       :arc   (apply (partial c2d/arc canref) params)
-                       :point (do 
-                                (c2d/set-stroke canref (* 2 stroke))
-                                (c2d/point canref params)
-                                (c2d/set-stroke canref  stroke)
-                                )
-                       )
-                     )
-                   (:attach strokes)
-  )
-
 (defn line-pct 
+  "Draw a percentage of a line"
   ([canref pct p1 p2]
    (let [[x1 y1] p1
          [x2 y2] p2]
@@ -62,10 +87,11 @@
          xnew  (+ x1 (* pct xdiff))
          ynew  (+ y1 (* pct ydiff))
          ]
-     (c2d/line canref x1 y1 xnew ynew)))
-  )
+     (c2d/line canref x1 y1 xnew ynew))))
 
-(defn arc-pct [canref pct x y w h start extent]
+(defn arc-pct 
+  "Draw a percentage of an arc"
+  [canref pct x y w h start extent]
   (let [pct    (* 0.01 pct)
         ;diff   (- end start)
         ;newend (+ 0 (* pct diff))
@@ -73,7 +99,9 @@
         ]
     (c2d/arc canref x y w h start newextent)))
 
-(defn draw-glyph-pct [canref glyph]
+(defn draw-glyph-pct 
+  "Incrementally draw a glyph, returning new percentage done"
+  [canref glyph]
   (let [{:keys [parts width in out bbox]} glyph
         pct (get glyph :pct 0)
         [inx iny] in
@@ -89,20 +117,15 @@
         :arc   (apply (partial arc-pct canref pct) params)
         ))
     (c2d/pop-matrix canref)
-    (inc pct)
-    ))
+    (inc pct)))
 
-(defn draw-glyph [canref glyph]
+(defn draw-glyph 
+  "Draw a glyph"
+  [canref glyph]
   (let [{:keys [parts width in out bbox]} glyph
         [inx iny] in
         [outx outy] out ]
     (c2d/push-matrix canref)
-    ;(c2d/translate canref (- (* 0.5 width)) 0)
-    ;(c2d/translate canref  (* 0.5 width) 0)
-    ;(c2d/set-color canref :red)
-    ;(c2d/set-stroke canref 0.5)
-    ;(c2d/arc canref 0 0 20 20 0 fm/TWO_PI)
-    ;(c2d/set-color canref :green)
     (c2d/set-stroke canref stroke)
     (doseq [part parts
             :let [kind (first part)
@@ -116,7 +139,9 @@
     ))
 
 
-(defn draw-sigil-pct [canref sigilkey node]
+(defn draw-sigil-pct 
+  "Incrementally draw a sigil, updating :data :pct as it goes"
+  [canref sigilkey node]
   (let [sigil  (get @sigils sigilkey)
         me     (get sigil node)
         {:keys [:next :children :data ]} me
@@ -127,7 +152,6 @@
         in     (negpoint (get-in n [:data :in] [0 0]))
         ]
     (c2d/set-stroke canref stroke)
-    (c2d/set-color canref :lime)
     (draw-glyph-pct canref data )
     (when (>= pct 100 ) 
       (if-not (empty? children)
@@ -149,24 +173,17 @@
     (swap! sigils assoc-in [sigilkey node :data :pct] (inc pct))
     ))
 
-(defn draw-sigil [canref sigil node]
-  (let [me     (get sigil node)
+(defn draw-sigil 
+  "Draw a full sigil"
+  [canref sigilkey node]
+  (let [sigil  (get @sigils sigilkey)
+        me     (get sigil node)
         {:keys [:next :children :data ]} me
         out    (:out data [20, 0])
         width  (:width data 20)  
         n      (get sigil next)
         in     (negpoint (get-in n [:data :in] [0 0]))
         ]
-    (c2d/set-color canref :red)
-    (c2d/set-stroke canref 0.75)
-    ;(c2d/line canref 0 0 20 0)
-    ;(c2d/line canref 0 0 0 20)
-    ;(c2d/crect canref 0 0 width width true)
-    (c2d/set-stroke canref stroke)
-    ;(c2d/set-color canref 0 (+ 50 (* node 20)) 0)
-    (c2d/set-color canref :lime)
-    ;(c2d/set-stroke canref stroke)
-    ;(c2d/translate canref (* -0.5 width) 0)
     (draw-glyph canref data)
     (if-not (empty? children)
       (doseq [[child tmatrix] (map vector children (:attach data))
@@ -176,72 +193,17 @@
         (c2d/translate canref x y)
         (c2d/rotate canref theta)
         (c2d/translate canref (negpoint chin) )
-        ;(c2d/line canref 0 0 0 100)
-        ;(c2d/line canref 0 0 100 0)
-        (draw-sigil canref sigil child)
-        (c2d/pop-matrix canref)
-        )
-      )
+        (draw-sigil canref sigilkey child)
+        (c2d/pop-matrix canref)))
     (c2d/translate canref out)
     (c2d/translate canref in)
-    ;(c2d/translate canref (* 0.5 width) 0)
     (when next
-        (draw-sigil canref sigil next)
-        )
-
+        (draw-sigil canref sigilkey next))
     ))
 
 
-
-;(defn digit->glyphfn [d] (case d \0 (g/zero) \1 (g/one) \2 (g/two) \3 (g/three)))
-
-(comment
-  (def testsigil (arp->sigil "20:21:23"))
-  (def testsigil (arp->sigil "00:21:30"))
-  (def testsigil (arp->sigil "10:20:30:31:33"))
-
-  (arp->sigil "03:03:03")
- (g/attach-glyphs-by-line (g/one) (g/two))
-  )
-
-;(defn arp->sigil [macstr]
-;  (let [rev    (clojure.string/reverse macstr)
-;        segs   (clojure.string/split rev #":")
-;        gpairs (for [seg segs
-;                     :let [a (first seg)
-;                           b (second seg)]]
-;                 (g/attach-glyph (digit->glyphfn b) (digit->glyphfn a)))
-;        ;gpairs (reverse gpairs)
-;        ;lined  (map #(g/attach-out-glyph (g/join-line) %) gpairs) 
-;        ]
-;    ;(reduce #(g/attach-out-glyph (g/attach-out-glyph  (g/join-line)) %2) lined)
-;    (reduce #(g/attach-glyphs-by-line %2 %1) gpairs)))
-
-(def lineno (atom 20))
 (defn draw-testbed [canvas]
-  (comment c2d/with-canvas [canvas canvas]
-           ;(draw-sigil canvas (g/two))
-           (c2d/set-color canvas :red)
-           (c2d/set-stroke canvas 1)
-           (c2d/translate canvas 100 100)
-           (c2d/line canvas -100 0 100 0)
-           (c2d/line canvas 0 -100 0 100)
-           (c2d/arc canvas 0 0 100 100 0 fm/TWO_PI)
-           (c2d/arc canvas 0 0 200 200 0 fm/TWO_PI)
-           (c2d/shape canvas (c2d/rect-shape -10 -10 20 20))
-           ;(c2d/shape canvas (g/attach-rect2d-at (c2d/rect-shape -10 -10 20 20) 0 -10 -10 0 fm/-HALF_PI) true)
-
-           )
-  (reset! lineno 20)
-  (let [
-          hw (* 0.5 (:w canvas))
-          hh (* 0.5 (:h canvas))
-        ] 
-    (c2d/with-canvas [canref canvas]
-                     (c2d/translate canref (* 0.10 hw) hh)
-                     (draw-sigil-pct canref :s1 0)
-                     )
-    ))
+  )
 
 (defn draw-error [canvas]
   (let [exc     (:exception @state)
@@ -276,6 +238,92 @@
                      )
     ))
 
+(defn draw-one-sigil [canvas]
+  (let [hw  (* 1/2 (:w canvas))
+        hh  (* 1/2 (:h canvas))
+        cs  (:current-sigil @state)
+        fw  (get-in @sigilmeta [cs :fullwidth])
+        hfw (* 1/2 fw) ] 
+    (c2d/with-canvas [canref canvas]
+                     (c2d/set-color canref :lime)
+                     ;(c2d/text canref fw 10 10)
+                     (c2d/translate canref (- hw hfw) hh)
+                     (draw-sigil-pct canref cs 0)
+                     )))
+
+(defn mode-one-sigil []
+  (when-not (:current-sigil @state)
+    (let [sigilkey (rand-nth (keys @sigils))]
+      (swap! state assoc :current-sigil sigilkey)
+      (swap! sigils assoc sigilkey (mac->sigil sigilkey))
+      ))
+  (when-not (:timeout @state)
+    (swap! state assoc :timeout (+ (now) (* 1000 60))))
+  (when (> (now) (:timeout @state))
+    (swap! state assoc :mode :new))
+  )
+
+(defn draw-passing-sigils [canvas]
+  (doseq [sigilkey (:sigil-set @state)]
+    (let [sigilm   (get @sigilmeta sigilkey)
+          {:keys [x y stroke color]} sigilm]
+      (c2d/with-canvas [canref canvas]
+                       (c2d/translate canref x y)
+                       (c2d/push-matrix canref)
+                       (c2d/set-color canref color)
+                       (with-redefs [stroke stroke]
+                         (draw-sigil canref sigilkey 0))
+                       (c2d/pop-matrix canref)
+                       )
+      (swap! sigilmeta assoc-in [sigilkey :x] (dec x))
+      ))
+  )
+
+(def color-list [:green :lime :lightgreen])
+(defn mode-passing-sigils []
+  (when-not (:sigil-set @state)
+    (let [sigil-set (random-sample 0.3 (keys @sigils)) 
+          sh        (:h canvas)
+          sw        (:w canvas)
+          ]
+      (swap! state assoc :sigil-set sigil-set)
+      (doseq [sigilkey sigil-set]
+        (let [
+              st (inc (rand-int 6))
+              ;ms (-> (rand-int 6) inc (* 10))
+              ms (* st 10)
+              y (rand-int sh)
+              len (get-in @sigilmeta [sigilkey :fullwidth])
+              x (+ sw (rand-int len))
+              color (rand-nth color-list)
+              ]
+          (swap! sigilmeta (partial merge-with merge) {sigilkey {
+                                                                 :color color
+                                                                 :stroke st
+                                                                 :y y
+                                                                 :x x
+                                                                 }})
+          (swap! sigils assoc sigilkey (with-redefs [g/MS ms g/-MS (- ms)]
+                                                    (mac->sigil sigilkey)))
+          ))
+      ))
+  (if (empty? (remove true? (for [k (:sigil-set @state)] 
+                              (let [{:keys [x fullwidth]} (get-in @sigilmeta [k])
+                                    rpos (+ x fullwidth)
+                                    out (< rpos 0)]
+                                out))))
+    (swap! state assoc :mode :new)))
+
+(defn mode-new 
+  "Cleanup state and select new mode randomly"
+  []
+  (arp/get-macs)
+  (update-sigil-map)
+  (swap! state dissoc :current-sigil :timeout :sigil-set)
+  (let [newmode (rand-nth modes)]
+    (swap! state assoc :mode newmode))
+  )
+
 (defn draw [canvas _ _ _]
   (try
     (c2d/with-canvas-> canvas 
@@ -284,17 +332,20 @@
 
     (case (:mode @state)
       :error (draw-error canvas)
-      :sigil nil;(draw-sigil canvas)
+      :new (mode-new)
+      :one-sigil (do (mode-one-sigil) (draw-one-sigil canvas))
+      :passing-sigils (do (mode-passing-sigils) (draw-passing-sigils canvas))
       nil)
     (draw-testbed canvas)
     (catch Exception e
       (do
         (swap! state assoc :exception e)
         (swap! state assoc :mode :error)
-        (draw-error canvas))))
- )
+        (draw-error canvas)))))
 
-(defn start [fullscreen?]
+(defn start [fullscreen? & wharg]
+  (arp/get-macs)
+  (update-sigil-map)
   (if fullscreen?
     (let [w (c2d/screen-width)
           h (c2d/screen-height)]
@@ -308,40 +359,54 @@
                           :position [0 0]
                           :w w
                           :h h
+                          })))
+    (let [[w h] wharg]
+      (def canvas (c2d/canvas w h))
+      (def window 
+        (c2d/show-window {:canvas canvas 
+                          :window-name "arp-sigils"
+                          :draw-fn draw
+                          :fps 30
+                          :w w
+                          :h h
                           }
                          ))
-      )
-    (def window 
-      (c2d/show-window {:canvas canvas 
-                        :window-name "arp-sigils"
-                        :draw-fn draw
-                        :fps 30
-                        }
-                       ))
-    ))
+      )))
 
 (comment
-  (start false)
-  (type @sigils)
+  (start false 1200 600)
+  (identity @state)
   (keys @sigils)
+  (first @sigils)
+  (identity @sigilmeta)
+  (:sigil-set @state)
+  (for [k (keys @sigilmeta)]
+    (get-in @sigilmeta [k :x]))
+  (swap! state assoc :mode :passing-sigils)
+  (get-in @sigilmeta [(key (first @sigils)) :fullwidth])
+  (keys (get @sigilmeta (key (first @sigils))))
+  (s/calc-length (get @sigils "e4:b9:7a:92:2e:bc") 0)
+  (get-in @sigils [(:current-sigil @state) :fullwidth])
+  (type @sigils)
   (identity testsigil)
-  (identity @sigils)
   (swap! sigils assoc-in [:s1 0 :data :pct] 10)
   (swap! sigils assoc :s1 testsigil)
-  (def testsigil 
-    (s/size-sigil (-> (s/append-glyph [] :join-line)
-      (s/append-glyph-at-line-end , 0 :fourteen)
-      (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :fourteen)
-      (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :fifteen)
-      (s/append-glyph-at-line-end , 0 :join-line)
-      (s/append-glyph-at-line-end , 0 :fifteen)
-      (s/attach-child , 1 :fourteen)
-      (s/attach-child , 3 :fourteen)
-      (s/attach-child , 5 :eleven)
-      (s/attach-child , 7 :eight)
-    ) 0))
+  (with-redefs [g/MS 20 g/-MS -20] 
+               (def testsigil 
+                 (s/size-sigil (-> (s/append-glyph [] :join-line)
+                                 (s/append-glyph-at-line-end , 0 :one)
+                                 (s/append-glyph-at-line-end , 0 :join-line)
+                                 (s/append-glyph-at-line-end , 0 :fifteen)
+                                 (s/append-glyph-at-line-end , 0 :join-line)
+                                 (s/append-glyph-at-line-end , 0 :fifteen)
+                                 (s/append-glyph-at-line-end , 0 :join-line)
+                                 (s/append-glyph-at-line-end , 0 :fifteen)
+                                 (s/attach-child , 1 :fourteen)
+                                 (s/attach-child , 3 :fourteen)
+                                 (s/attach-child , 5 :eleven)
+                                 (s/attach-child , 7 :eight)
+                                 ) 0))
+               )
   (def gset [:zero :one :two :three :four :five :six :seven :eight :nine :ten :eleven :twelve :thirteen :fourteen :fifteen])
   (def testsigil 
     (s/size-sigil (-> (s/append-glyph [] :join-line)

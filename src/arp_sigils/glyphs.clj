@@ -11,8 +11,6 @@
 
 (defn empty-glyph [name] {:name name })
 
-
-
 (defn attach-glyph [base addition]
   (let [acount (count (:attach base))]
     (assoc base :subglyphs (vec (repeat acount addition)))))

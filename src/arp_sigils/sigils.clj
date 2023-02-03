@@ -5,39 +5,18 @@
             [fastmath.core :as fm]))
 
 
-;(defn follow-outglyphs [s]
-;  (loop [s    s
-;         node 0
-;         path []]
-;    (if )
-;    )
-;  )
 
 (reduce #(apply (partial assoc %1) %2) {} [[:1 1] [:2 2]])
 
-;(defn attach-subglyph [sigil parent childtype]
-;  (let [myname (get-in sigil [parent :name])
-;        childcount (get myname g/child-count-map)]
-;    (assoc-in sigil [parent :subglyphs] child))
-;    )
-;
-;(defn attach-outglyph [sigil parent child]
-;  (assoc-in sigil [parent :outglyph] child))
-
-;{:name _
-; :next _
-; :chlidren _
-; :data _}
-(g/size-join-line [])
 (defn size-sigil [sigil node]
-  (print "sizing at " node)
+  ;(print "sizing at " node)
   (let [me          (get sigil node)
         myname      (:name me)
         nextglyph   (:next me)
         nextdata    (:data (get-in sigil [nextglyph :data]))
         childglyphs (:children me)
         myfunc      (get g/size-function-map myname)
-        _ (println " with name " myname "next: " nextglyph "children: " childglyphs)
+        ;_ (println " with name " myname "next: " nextglyph "children: " childglyphs)
         combined    (vec(remove nil? (flatten [nextglyph childglyphs])))
         sized       (if-not (empty? combined)
                       (reduce #(size-sigil %1 %2) sigil combined)
@@ -49,6 +28,15 @@
         sizeresult  (myfunc childdata)
         ]
       (assoc-in sized [node :data] sizeresult)))
+
+(defn calc-length [sigil node]
+  (let [me        (get sigil node)
+        nextglyph (:next me)
+        width     (get-in me [:data :width])
+        ]
+    (if nextglyph
+      (+ width (calc-length sigil nextglyph))
+      width)))
 
 (defn find-line-last [sigil node]
   (let [nodeinfo (get sigil node)
