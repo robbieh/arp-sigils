@@ -2,6 +2,10 @@
 
 Draw MAC addresses from your ARP cache as runic sigils
 
+## Sample image
+
+![sample sigil image](https://raw.githubusercontent.com/robbieh/arp-sigils/dev/doc/images/sigil-1.jpg)
+
 ## Installation
 
 Download the latest release from the Releases section on the right ->
