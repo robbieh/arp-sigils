@@ -24,6 +24,8 @@
 (def modes [:one-sigil :passing-sigils])
 (def stroke 3)
 (def palette )
+(def color-list [:green :lime :lightgreen])
+(declare canvas)
 
 ;(color/palette (color/gradient [:darkblue [0 50 0] :dark-green]) 100)
 ;(nth pal (nth (:temp @fetch/forecast) x))
@@ -279,7 +281,6 @@
       ))
   )
 
-(def color-list [:green :lime :lightgreen])
 (defn mode-passing-sigils []
   (when-not (:sigil-set @state)
     (let [sigil-set (random-sample 0.3 (keys @sigils)) 

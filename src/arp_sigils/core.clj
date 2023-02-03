@@ -11,13 +11,18 @@
 
 (defn -main [& args]
   (let [{:keys [options arguments summary errors]} (cli/parse-opts args cli-options)
-        {:keys [wxhstr fullscreen]} options
-        [w h]  (mapv clojure.edn/read-string (clojure.string/split wxhstr #"[xX]"))]
-    (if fullscreen
+        {:keys [size fullscreen help]} options
+        ]
+    (when help
+      (do (println summary) (System/exit 1)))
+    (when (and (not fullscreen) (nil? size))
+      (do (println "Please pass either --fullscreen or --size [WxH]") (System/exit 1)))
+    (if-not fullscreen
+      (let [[w h]  (mapv clojure.edn/read-string (clojure.string/split size #"[xX]"))]
+        (if (and (integer? w) (integer? h))
+          (draw/start false w h)
+          (println "Failed to parse size arguments [" w h "]")))
       (draw/start true)
-      (if (and (integer? w) (integer? h))
-        (draw/start false w h)
-        (println "Failed to parse size arguments [" w h "]"))
       ))
   nil)
 
