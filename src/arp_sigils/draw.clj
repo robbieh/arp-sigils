@@ -5,6 +5,8 @@
             [clojure2d.core :as c2d]
             [clojure2d.color :as color]
             [clojure2d.pixels :as pix]
+            [clojure2d.extra.signal :as sig]
+            [clojure2d.extra.glitch :as glch]
             [fastmath.core :as fm]
             ))
 
@@ -25,6 +27,7 @@
 (def stroke 3)
 (def palette )
 (def color-list [:green :lime :lightgreen])
+(declare bgcanvas)
 (declare canvas)
 
 ;(color/palette (color/gradient [:darkblue [0 50 0] :dark-green]) 100)
@@ -204,9 +207,6 @@
     ))
 
 
-(defn draw-testbed [canvas]
-  )
-
 (defn draw-error [canvas]
   (let [exc     (:exception @state)
         message (.getMessage exc)
@@ -325,11 +325,28 @@
     (swap! state assoc :mode newmode))
   )
 
+
+(defn draw-postprocess [canvas]
+  (when-not (:exception @state)
+    ;just blur
+    (comment let [bi (:buffer canvas)]
+      (-> canvas (pix/set-canvas-pixels! (->> (pix/to-pixels bi)
+                                  (pix/filter-channels (pix/box-blur 3))))))
+    (let [bi (:buffer canvas)]
+      (-> canvas (pix/set-canvas-pixels! (->> (pix/to-pixels bi)
+                                           (glch/blend-machine)
+                                  ))))
+    )
+  )
+
+(defn draw-testbed [canvas]
+  )
+
+
 (defn draw [canvas _ _ _]
   (try
-    (c2d/with-canvas-> canvas 
-                       (c2d/set-background :black)
-                       ) 
+    (c2d/with-canvas-> bgcanvas (c2d/set-background :black )) 
+    (c2d/with-canvas-> canvas (c2d/set-background :black 0.0)) 
 
     (case (:mode @state)
       :error (draw-error canvas)
@@ -337,7 +354,9 @@
       :one-sigil (do (mode-one-sigil) (draw-one-sigil canvas))
       :passing-sigils (do (mode-passing-sigils) (draw-passing-sigils canvas))
       nil)
+    (draw-postprocess canvas)
     (draw-testbed canvas)
+    (c2d/with-canvas-> bgcanvas (c2d/image canvas))
     (catch Exception e
       (do
         (swap! state assoc :exception e)
@@ -350,10 +369,11 @@
   (if fullscreen?
     (let [w (c2d/screen-width)
           h (c2d/screen-height)]
+      (def bgcanvas (c2d/canvas w h))
       (def canvas (c2d/canvas w h))
       (def weather-canvas (c2d/canvas w h))
       (def window 
-        (c2d/show-window {:canvas canvas 
+        (c2d/show-window {:canvas bgcanvas 
                           :window-name "arp-sigils"
                           :draw-fn draw
                           :fps 30
@@ -362,17 +382,20 @@
                           :h h
                           })))
     (let [[w h] wharg]
+      (def bgcanvas (c2d/canvas w h))
       (def canvas (c2d/canvas w h))
       (def window 
-        (c2d/show-window {:canvas canvas 
+        (c2d/show-window {:canvas bgcanvas 
                           :window-name "arp-sigils"
                           :draw-fn draw
                           :fps 30
                           :w w
                           :h h
                           }
-                         ))
-      )))
+                         )))
+    )
+    (c2d/with-canvas-> bgcanvas (c2d/set-background :black))
+  )
 
 (comment
   (start false 1200 600)
