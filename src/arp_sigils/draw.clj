@@ -25,9 +25,9 @@
 (def sigilmeta (atom {}))
 (def errstate (atom {}))
 (def modes [:one-sigil :passing-sigils])
-(def stroke 3)
+(def stroke 6)
 (def palette )
-(def color-list [:green :lime :lightgreen])
+(def color-list [:green :lime :docc/pistachio-green :forestgreen :springgreen])
 (declare bgcanvas)
 (declare canvas)
 
@@ -230,14 +230,13 @@
       )
     (c2d/with-canvas [canvas canvas]
                      (c2d/set-font canvas "Hack")
-                     (c2d/set-font-attributes canvas 10 :bold)
+                     (c2d/set-font-attributes canvas 30 :bold)
                      ;(c2d/set-background canvas 45 51 45)
                      (c2d/set-color canvas :lime)
-                     (c2d/text canvas message 10 20)
-                     (c2d/text canvas (str diff) (- (:w canvas) 200) (- (:h canvas) 20))
-                     (doall (map-indexed #(c2d/text canvas %2 10 (+ 50 (* 10 %1))) lines))
-                     (c2d/text canvas (:mode @state) (- (:w canvas) 200) (- (:h canvas) 30))
-                     (c2d/text canvas (:addr @state) (- (:w canvas) 200) (- (:h canvas) 40))
+                     (c2d/text canvas message 10 30)
+                     (c2d/text canvas (str diff) (- (:w canvas) 200) (- (:h canvas) 30))
+                     (doall (map-indexed #(c2d/text canvas %2 10 (+ 50 (* 30 %1))) lines))
+                     (c2d/text canvas (:mode @state) (- (:w canvas) 200) (- (:h canvas) 60))
                      )
     ))
 
@@ -269,7 +268,7 @@
 (defn draw-passing-sigils [canvas]
   (doseq [sigilkey (:sigil-set @state)]
     (let [sigilm   (get @sigilmeta sigilkey)
-          {:keys [x y stroke color]} sigilm]
+          {:keys [x y stroke color speed]} sigilm]
       (c2d/with-canvas [canref canvas]
                        (c2d/translate canref x y)
                        (c2d/push-matrix canref)
@@ -278,7 +277,7 @@
                          (draw-sigil canref sigilkey 0))
                        (c2d/pop-matrix canref)
                        )
-      (swap! sigilmeta assoc-in [sigilkey :x] (dec x))
+      (swap! sigilmeta assoc-in [sigilkey :x] (- x speed))
       ))
   )
 
@@ -296,15 +295,17 @@
               ms (* st 10)
               y (rand-int sh)
               len (get-in @sigilmeta [sigilkey :fullwidth])
-              x (+ sw (rand-int len))
+              x (+ sw (rand-int (* 1/2 len)))
               color (rand-nth color-list)
               ]
-          (swap! sigilmeta (partial merge-with merge) {sigilkey {
-                                                                 :color color
-                                                                 :stroke st
-                                                                 :y y
-                                                                 :x x
-                                                                 }})
+          (swap! sigilmeta 
+                 (partial merge-with merge) {sigilkey {
+                                                       :color color
+                                                       :stroke st
+                                                       :y y
+                                                       :x x
+                                                       :speed ( * 1/2 (- 7 st))
+                                                       }})
           (swap! sigils assoc sigilkey (with-redefs [g/MS ms g/-MS (- ms)]
                                                     (mac->sigil sigilkey)))
           ))
@@ -327,8 +328,9 @@
   )
 
 
-(defn draw-postprocess [canvas]
+(defn draw-postprocess [canvas bgcanvas]
   (when-not (:exception @state)
+    (c2d/set-background bgcanvas :black)
     ;just blur
     (comment let [bi (:buffer canvas)]
       (-> canvas (pix/set-canvas-pixels! (->> (pix/to-pixels bi)
@@ -343,9 +345,10 @@
           ]
       (-> canvas (pix/set-canvas-pixels! p2)))
     ;overlay
-    (comment let [p1 (pix/to-pixels (:buffer canvas))]
-      (-> canvas (c2d/image (ov/render-spots (:buffer canvas))))
-      )
+    (when (> (rand) 0.8)
+    (let [p1 (pix/to-pixels (:buffer canvas))]
+      (-> bgcanvas (c2d/image (ov/render-crt-scanlines (:buffer canvas))))
+      ))
 
     )
   )
@@ -365,7 +368,7 @@
       :one-sigil (do (mode-one-sigil) (draw-one-sigil canvas))
       :passing-sigils (do (mode-passing-sigils) (draw-passing-sigils canvas))
       nil)
-    (draw-postprocess canvas)
+    (draw-postprocess canvas bgcanvas)
     (draw-testbed canvas)
     (c2d/with-canvas-> bgcanvas (c2d/image canvas))
     (catch Exception e
