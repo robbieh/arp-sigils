@@ -7,6 +7,7 @@
             [clojure2d.pixels :as pix]
             [clojure2d.extra.signal :as sig]
             [clojure2d.extra.glitch :as glch]
+            [clojure2d.extra.overlays :as ov]
             [fastmath.core :as fm]
             ))
 
@@ -332,10 +333,20 @@
     (comment let [bi (:buffer canvas)]
       (-> canvas (pix/set-canvas-pixels! (->> (pix/to-pixels bi)
                                   (pix/filter-channels (pix/box-blur 3))))))
-    (let [bi (:buffer canvas)]
-      (-> canvas (pix/set-canvas-pixels! (->> (pix/to-pixels bi)
-                                           (glch/blend-machine)
-                                  ))))
+    ;glitch lines
+    (comment let [p1 (pix/to-pixels (:buffer canvas))
+          p2 (pix/filter-channels (glch/pix2line {:nx 3 :ny 3
+                                                  :scale 3 :tolerance 55
+                                                  :nseed -1 :whole false
+                                                  :shiftx -0.46
+                                                  :shifty 0.66}) p1)
+          ]
+      (-> canvas (pix/set-canvas-pixels! p2)))
+    ;overlay
+    (comment let [p1 (pix/to-pixels (:buffer canvas))]
+      (-> canvas (c2d/image (ov/render-spots (:buffer canvas))))
+      )
+
     )
   )
 
