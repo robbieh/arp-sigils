@@ -25,10 +25,11 @@
 (def sigilmeta (atom {}))
 (def errstate (atom {}))
 (def modes [:one-sigil :passing-sigils])
-(def stroke 6)
+(def stroke 3)
 (def palette )
-(def color-list [:green :lime :docc/pistachio-green :forestgreen :springgreen])
+(def color-list [:green :lime :forestgreen :springgreen])
 (declare bgcanvas)
+(declare glchcanvas)
 (declare canvas)
 
 ;(color/palette (color/gradient [:darkblue [0 50 0] :dark-green]) 100)
@@ -209,7 +210,8 @@
 
 
 (defn draw-error [canvas]
-  (let [exc     (:exception @state)
+  (let [textsz  15
+        exc     (:exception @state)
         message (.getMessage exc)
         traces  (.getStackTrace exc)
         lines   (filter #(re-matches #".*arp_sigils.*" %) (concat (map str traces)))
@@ -230,13 +232,13 @@
       )
     (c2d/with-canvas [canvas canvas]
                      (c2d/set-font canvas "Hack")
-                     (c2d/set-font-attributes canvas 30 :bold)
+                     (c2d/set-font-attributes canvas textsz :bold)
                      ;(c2d/set-background canvas 45 51 45)
                      (c2d/set-color canvas :lime)
-                     (c2d/text canvas message 10 30)
-                     (c2d/text canvas (str diff) (- (:w canvas) 200) (- (:h canvas) 30))
-                     (doall (map-indexed #(c2d/text canvas %2 10 (+ 50 (* 30 %1))) lines))
-                     (c2d/text canvas (:mode @state) (- (:w canvas) 200) (- (:h canvas) 60))
+                     (c2d/text canvas message 10 textsz)
+                     (c2d/text canvas (str diff) (- (:w canvas) 200) (- (:h canvas) textsz))
+                     (doall (map-indexed #(c2d/text canvas %2 10 (+ 50 (* textsz %1))) lines))
+                     (c2d/text canvas (:mode @state) (- (:w canvas) 200) (- (:h canvas) (* 2 textsz)))
                      )
     ))
 
@@ -304,7 +306,7 @@
                                                        :stroke st
                                                        :y y
                                                        :x x
-                                                       :speed ( * 1/2 (- 7 st))
+                                                       :speed ( * 1/3 (- 7 st))
                                                        }})
           (swap! sigils assoc sigilkey (with-redefs [g/MS ms g/-MS (- ms)]
                                                     (mac->sigil sigilkey)))
@@ -327,28 +329,27 @@
     (swap! state assoc :mode newmode))
   )
 
-
-(defn draw-postprocess [canvas bgcanvas]
+(defn draw-postprocess [bgcanvas glchcanvas canvas]
   (when-not (:exception @state)
-    (c2d/set-background bgcanvas :black)
     ;just blur
     (comment let [bi (:buffer canvas)]
-      (-> canvas (pix/set-canvas-pixels! (->> (pix/to-pixels bi)
-                                  (pix/filter-channels (pix/box-blur 3))))))
+             (-> canvas (pix/set-canvas-pixels! (->> (pix/to-pixels bi)
+                                                  (pix/filter-channels (pix/box-blur 3))))))
     ;glitch lines
     (comment let [p1 (pix/to-pixels (:buffer canvas))
-          p2 (pix/filter-channels (glch/pix2line {:nx 3 :ny 3
-                                                  :scale 3 :tolerance 55
-                                                  :nseed -1 :whole false
-                                                  :shiftx -0.46
-                                                  :shifty 0.66}) p1)
-          ]
-      (-> canvas (pix/set-canvas-pixels! p2)))
+                  p2 (pix/filter-channels (glch/pix2line {:nx 3 :ny 3
+                                                          :scale 3 :tolerance 55
+                                                          :nseed -1 :whole false
+                                                          :shiftx -0.46
+                                                          :shifty 0.66}) p1)
+                  ]
+             (-> canvas (pix/set-canvas-pixels! p2)))
     ;overlay
-    (when (> (rand) 0.8)
-    (let [p1 (pix/to-pixels (:buffer canvas))]
-      (-> bgcanvas (c2d/image (ov/render-crt-scanlines (:buffer canvas))))
-      ))
+    (when (> (rand) 0.99)
+      (let []
+        (c2d/with-canvas-> glchcanvas 
+          (c2d/image (ov/render-crt-scanlines (:buffer canvas))))
+        ))
 
     )
   )
@@ -357,10 +358,15 @@
   )
 
 
-(defn draw [canvas _ _ _]
+(def composite-SRC (java.awt.AlphaComposite/getInstance java.awt.AlphaComposite/SRC))
+(defn draw [bgcanvas _ _ _]
   (try
     (c2d/with-canvas-> bgcanvas (c2d/set-background :black )) 
-    (c2d/with-canvas-> canvas (c2d/set-background :black 0.0)) 
+    ;(c2d/with-canvas-> canvas (c2d/set-background :black )) 
+    (c2d/with-canvas-> canvas 
+                       (c2d/set-composite composite-SRC)
+                       (c2d/set-background :black 0.0)
+                       (c2d/set-composite )) 
 
     (case (:mode @state)
       :error (draw-error canvas)
@@ -368,14 +374,15 @@
       :one-sigil (do (mode-one-sigil) (draw-one-sigil canvas))
       :passing-sigils (do (mode-passing-sigils) (draw-passing-sigils canvas))
       nil)
-    (draw-postprocess canvas bgcanvas)
+    (draw-postprocess bgcanvas glchcanvas canvas)
     (draw-testbed canvas)
+    (c2d/with-canvas-> bgcanvas (c2d/image glchcanvas))
     (c2d/with-canvas-> bgcanvas (c2d/image canvas))
     (catch Exception e
       (do
         (swap! state assoc :exception e)
         (swap! state assoc :mode :error)
-        (draw-error canvas)))))
+        ))))
 
 (defn start [fullscreen? & wharg]
   (arp/get-macs)
@@ -384,6 +391,7 @@
     (let [w (c2d/screen-width)
           h (c2d/screen-height)]
       (def bgcanvas (c2d/canvas w h))
+      (def glchcanvas (c2d/canvas w h))
       (def canvas (c2d/canvas w h))
       (def weather-canvas (c2d/canvas w h))
       (def window 
@@ -397,6 +405,7 @@
                           })))
     (let [[w h] wharg]
       (def bgcanvas (c2d/canvas w h))
+      (def glchcanvas (c2d/canvas w h))
       (def canvas (c2d/canvas w h))
       (def window 
         (c2d/show-window {:canvas bgcanvas 
@@ -409,6 +418,7 @@
                          )))
     )
     (c2d/with-canvas-> bgcanvas (c2d/set-background :black))
+    (c2d/with-canvas-> glchcanvas (c2d/set-background :black 0.0))
   )
 
 (comment
@@ -421,6 +431,7 @@
   (for [k (keys @sigilmeta)]
     (get-in @sigilmeta [k :x]))
   (swap! state assoc :mode :passing-sigils)
+  (swap! state dissoc :current-sigil :timeout :sigil-set)
   (get-in @sigilmeta [(key (first @sigils)) :fullwidth])
   (keys (get @sigilmeta (key (first @sigils))))
   (s/calc-length (get @sigils "e4:b9:7a:92:2e:bc") 0)
