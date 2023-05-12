@@ -72,6 +72,17 @@
       (s/attach-child , 11 (nth sg 5)))
                     0)))
 
+(defn mac->mandala
+  "Translates a MAC to a mandala-style sigil"
+  [macstr]
+  (let [pairs (clojure.string/split macstr #":")
+        firsts (map (comp str first) pairs)
+        seconds (map (comp str second) pairs)
+        fg (mapv g/char-glyph-map firsts)
+        sg (mapv g/char-glyph-map seconds)
+        ]
+  ))
+
 (defn update-sigil-map []
   (doseq [mac @arp/macs
           :let [fullwidth (s/calc-length (get @sigils mac) 0)]]
@@ -255,6 +266,18 @@
                      (draw-sigil-pct canref cs 0)
                      )))
 
+(defn mode-mandala []
+  (when-not (:current-sigil @state)
+    (let [sigilkey (rand-nth (keys @sigils))]
+      (swap! state assoc :current-sigil sigilkey)
+      (swap! sigils assoc sigilkey (mac->sigil sigilkey))
+      ))
+  (when-not (:timeout @state)
+    (swap! state assoc :timeout (+ (now) (* 1000 60))))
+  (when (> (now) (:timeout @state))
+    (swap! state assoc :mode :new))
+  )
+
 (defn mode-one-sigil []
   (when-not (:current-sigil @state)
     (let [sigilkey (rand-nth (keys @sigils))]
@@ -374,9 +397,9 @@
       :one-sigil (do (mode-one-sigil) (draw-one-sigil canvas))
       :passing-sigils (do (mode-passing-sigils) (draw-passing-sigils canvas))
       nil)
-    (draw-postprocess bgcanvas glchcanvas canvas)
+    ;(draw-postprocess bgcanvas glchcanvas canvas)
     (draw-testbed canvas)
-    (c2d/with-canvas-> bgcanvas (c2d/image glchcanvas))
+    ;(c2d/with-canvas-> bgcanvas (c2d/image glchcanvas))
     (c2d/with-canvas-> bgcanvas (c2d/image canvas))
     (catch Exception e
       (do
