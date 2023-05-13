@@ -13,6 +13,6 @@
   :main arp-sigils.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot [arp-sigils.core]
-                       :jvm-opts ["-Dclojure.compiler.direct-linking=true" ]
+                       ;:jvm-opts ["-Dclojure.compiler.direct-linking=true" ]
                        }
              })
